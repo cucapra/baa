@@ -4,10 +4,13 @@
 //
 // Contains tests for bit vector comparison operations. We use num-bigint as a
 // reference implementation.
+#[cfg(feature = "bigint")]
 use baa::*;
+#[cfg(feature = "bigint")]
 use num_bigint::*;
 use proptest::prelude::*;
 
+#[cfg(feature = "bigint")]
 fn do_test_cmp_signed(
     a: BigInt,
     b: BigInt,
@@ -22,6 +25,7 @@ fn do_test_cmp_signed(
     assert_eq!(expected_bool, res_bool, "{a} {b} {expected_bool}");
 }
 
+#[cfg(feature = "bigint")]
 fn do_test_cmp_unsigned(
     a_signed: BigInt,
     b_signed: BigInt,
@@ -38,16 +42,22 @@ fn do_test_cmp_unsigned(
     assert_eq!(expected_bool, res_bool, "{a} {b} {expected_bool}");
 }
 
+#[cfg(feature = "bigint")]
 fn do_test_cmp_greater(a: BigInt, b: BigInt, width: WidthInt) {
     do_test_cmp_unsigned(a, b, width, |a, b| a.is_greater(b), |a, b| a > b)
 }
+
+#[cfg(feature = "bigint")]
 fn do_test_cmp_greater_signed(a: BigInt, b: BigInt, width: WidthInt) {
     do_test_cmp_signed(a, b, width, |a, b| a.is_greater_signed(b), |a, b| a > b)
 }
 
+#[cfg(feature = "bigint")]
 fn do_test_cmp_greater_equal(a: BigInt, b: BigInt, width: WidthInt) {
     do_test_cmp_unsigned(a, b, width, |a, b| a.is_greater_or_equal(b), |a, b| a >= b)
 }
+
+#[cfg(feature = "bigint")]
 fn do_test_cmp_greater_equal_signed(a: BigInt, b: BigInt, width: WidthInt) {
     do_test_cmp_signed(
         a,
@@ -58,9 +68,12 @@ fn do_test_cmp_greater_equal_signed(a: BigInt, b: BigInt, width: WidthInt) {
     )
 }
 
+#[cfg(feature = "bigint")]
 fn do_test_cmp_equal(a: BigInt, b: BigInt, width: WidthInt) {
     do_test_cmp_unsigned(a, b, width, |a, b| a.is_equal(b), |a, b| a == b)
 }
+
+#[cfg(feature = "bigint")]
 fn do_test_cmp_equal_signed(a: BigInt, b: BigInt, width: WidthInt) {
     do_test_cmp_signed(a, b, width, |a, b| a.is_equal(b), |a, b| a == b)
 }
@@ -68,7 +81,7 @@ fn do_test_cmp_equal_signed(a: BigInt, b: BigInt, width: WidthInt) {
 //////////////////////////
 // Unit Tests
 //////////////////////////
-
+#[cfg(feature = "bigint")]
 #[test]
 fn do_test_cmp_greater_signed_regressions() {
     do_test_cmp_greater_signed(
@@ -81,39 +94,47 @@ fn do_test_cmp_greater_signed_regressions() {
 //////////////////////////
 // Random Tests
 //////////////////////////
+#[cfg(feature = "bigint")]
 mod bitvec_arithmetic;
+#[cfg(feature = "bigint")]
 use bitvec_arithmetic::gen_big_int_pair;
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(5000))]
 
 
+    #[cfg(feature = "bigint")]
     #[test]
     fn test_cmp_greater((a, b, width) in gen_big_int_pair()) {
         do_test_cmp_greater(a, b, width);
     }
 
-     #[test]
+    #[cfg(feature = "bigint")]
+    #[test]
     fn test_cmp_greater_signed((a, b, width) in gen_big_int_pair()) {
         do_test_cmp_greater_signed(a, b, width);
     }
 
+    #[cfg(feature = "bigint")]
     #[test]
     fn test_cmp_greater_equal((a, b, width) in gen_big_int_pair()) {
         do_test_cmp_greater_equal(a, b, width);
     }
 
-     #[test]
+    #[cfg(feature = "bigint")]
+    #[test]
     fn test_cmp_greater_equal_signed((a, b, width) in gen_big_int_pair()) {
         do_test_cmp_greater_equal_signed(a, b, width);
     }
 
+    #[cfg(feature = "bigint")]
     #[test]
     fn test_cmp_equal((a, b, width) in gen_big_int_pair()) {
         do_test_cmp_equal(a, b, width);
     }
 
-     #[test]
+    #[cfg(feature = "bigint")]
+    #[test]
     fn test_cmp_equal_signed((a, b, width) in gen_big_int_pair()) {
         do_test_cmp_equal_signed(a, b, width);
     }

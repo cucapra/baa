@@ -350,6 +350,7 @@ mod tests {
         ));
     }
 
+    #[cfg(feature = "bigint")]
     use num_bigint::*;
     use proptest::prelude::*;
 
@@ -364,7 +365,7 @@ mod tests {
         assert_eq!(BitVecValue::from_big_int(value, width), v0);
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "bigint"))]
     fn gen_big_uint(bits: WidthInt) -> impl Strategy<Value = BigUint> {
         let byte_count = bits.div_ceil(u8::BITS);
         let words = prop::collection::vec(any::<u8>(), byte_count as usize);
@@ -378,7 +379,7 @@ mod tests {
         })
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "bigint"))]
     fn gen_big_int(bits: WidthInt) -> impl Strategy<Value = BigInt> {
         gen_big_uint(bits - 1)
             .prop_flat_map(|unsigned| (any::<bool>(), Just(unsigned)))
@@ -388,7 +389,7 @@ mod tests {
             })
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "bigint"))]
     fn gen_big_int_and_width() -> impl Strategy<Value = (BigInt, WidthInt)> {
         let max_bits = 16 * Word::BITS;
         (1..max_bits).prop_flat_map(|width| (gen_big_int(width), Just(width)))
