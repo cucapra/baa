@@ -113,23 +113,26 @@ impl BitVecValue {
 
     pub fn from_bytes_le(bytes: &[u8], width: WidthInt) -> Self {
         debug_assert!(width.div_ceil(u8::BITS) as usize >= bytes.len());
-        Self(match width.into() {
+        match width.into() {
             W::Word => {
                 let mut b = [0u8; Word::BITS.div_ceil(u8::BITS) as usize];
                 b[0..bytes.len()].copy_from_slice(bytes);
-                BitVecValueImpl::new_word(Word::from_le_bytes(b), width)
+                Self(BitVecValueImpl::new_word(Word::from_le_bytes(b), width))
             }
             W::Double => {
                 let mut b = [0u8; DoubleWord::BITS.div_ceil(u8::BITS) as usize];
                 b[0..bytes.len()].copy_from_slice(bytes);
-                BitVecValueImpl::new_double_word(DoubleWord::from_le_bytes(b), width)
+                Self(BitVecValueImpl::new_double_word(
+                    DoubleWord::from_le_bytes(b),
+                    width,
+                ))
             }
             W::Big => {
-                // let mut words = value_vec_zeros(bits);
-                // crate::bv::io::bytes::from_bytes_le(bytes, bits, words.as_mut());
-                todo!()
+                let mut out = BitVecValue::zero(width);
+                crate::bv::io::bytes::from_bytes_le(bytes, width, out.words_mut());
+                out
             }
-        })
+        }
     }
 
     pub fn zero(width: WidthInt) -> Self {
