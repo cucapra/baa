@@ -7,6 +7,10 @@ pub type WidthInt = u32;
 /// Word size for values.
 pub type Word = u64;
 
+pub type DoubleWord = u128;
+
+const _: () = assert!(Word::BITS * 2 == DoubleWord::BITS);
+
 /// Wraps either an array or a bit vector value.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {

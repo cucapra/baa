@@ -18,6 +18,17 @@ pub enum IntErrorKind {
     /// The integer does not fit into the size of the bitvector.
     ExceedsWidth,
 }
+impl From<std::num::ParseIntError> for ParseIntError {
+    fn from(e: std::num::ParseIntError) -> Self {
+        let kind = match e.kind() {
+            std::num::IntErrorKind::NegOverflow | std::num::IntErrorKind::PosOverflow => {
+                IntErrorKind::ExceedsWidth
+            }
+            _ => IntErrorKind::InvalidDigit,
+        };
+        ParseIntError { kind }
+    }
+}
 
 /// Interprets the bits as a two's complement integer.
 pub(crate) fn to_bit_str_signed(values: &[Word], width: WidthInt) -> String {

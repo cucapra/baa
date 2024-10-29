@@ -195,15 +195,15 @@ pub trait BitVecOps {
         crate::bv::arithmetic::is_neg(self.words(), self.width())
     }
 
-    declare_arith_bin_fn!(add);
-    declare_arith_bin_fn!(sub);
-    declare_arith_bin_fn!(shift_left);
-    declare_arith_bin_fn!(shift_right);
-    declare_arith_bin_fn!(arithmetic_shift_right);
-    declare_arith_bin_fn!(mul);
-    declare_bit_arith_bin_fn!(and);
-    declare_bit_arith_bin_fn!(or);
-    declare_bit_arith_bin_fn!(xor);
+    // declare_arith_bin_fn!(add);
+    // declare_arith_bin_fn!(sub);
+    // declare_arith_bin_fn!(shift_left);
+    // declare_arith_bin_fn!(shift_right);
+    // declare_arith_bin_fn!(arithmetic_shift_right);
+    // declare_arith_bin_fn!(mul);
+    // declare_bit_arith_bin_fn!(and);
+    // declare_bit_arith_bin_fn!(or);
+    // declare_bit_arith_bin_fn!(xor);
 
     fn is_equal<R: BitVecOps + ?Sized>(&self, rhs: &R) -> bool {
         debug_assert_eq!(

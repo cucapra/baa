@@ -4,23 +4,85 @@
 // author: Kevin Laeufer <laeufer@cornell.edu>
 
 use crate::bv::io::strings::ParseIntError;
-use crate::{BitVecMutOps, BitVecOps, BitVecValueRef, WidthInt, Word};
+use crate::{BitVecMutOps, BitVecOps, BitVecValueRef, DoubleWord, WidthInt, Word};
 
 pub(crate) type ValueVec = Vec<Word>;
 
 /// Owned bit-vector value.
 /// Note: Ord does not necessarily order by value.
-#[derive(Clone, Hash, Ord, PartialOrd)]
+#[derive(Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 #[cfg_attr(feature = "serde1", derive(serde::Serialize, serde::Deserialize))]
-pub struct BitVecValue {
-    width: WidthInt,
-    words: ValueVec,
+pub struct BitVecValue(pub(super) BitVecValueImpl);
+
+/// Implementation enum for the owned bit-vector value.
+/// We hide this inside a `pub struct` in order not to expose the individual enum entries to the
+/// user.
+#[derive(Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[cfg_attr(feature = "serde1", derive(serde::Serialize, serde::Deserialize))]
+pub(super) enum BitVecValueImpl {
+    Word(WidthInt, Word),
+    Double(WidthInt, [Word; 2]),
+    Big(WidthInt, Box<[Word]>),
 }
+
+impl BitVecValueImpl {
+    /// Create a new value that fits into a single word
+    const fn new_word(value: Word, width: WidthInt) -> Self {
+        debug_assert!(width > 0 && width <= Word::BITS);
+        Self::Word(width, value)
+    }
+
+    /// Create a new value of 64 < width <= 128
+    const fn new_double_word(value: DoubleWord, width: WidthInt) -> Self {
+        debug_assert!(width > Word::BITS && width <= DoubleWord::BITS);
+        Self::Double(width, double_word_to_words(value))
+    }
+
+    /// Create a new value of width > 128. It will be initialized to all zeros.
+    fn new_big_zero(width: WidthInt) -> Self {
+        debug_assert!(width > DoubleWord::BITS);
+        let num_words = width.div_ceil(Word::BITS) as usize;
+        Self::Big(width, vec![0; num_words].into_boxed_slice())
+    }
+}
+
+pub(crate) fn double_word_to_words(value: DoubleWord) -> [Word; 2] {
+    // lsb first, then msb
+    [value as Word, (value >> Word::BITS) as Word]
+}
+
+pub(crate) fn double_word_from_words(lsb: Word, msb: Word) -> DoubleWord {
+    // lsb first, then msb
+    (lsb as DoubleWord) | ((msb as DoubleWord) << Word::BITS)
+}
+
+/// divides width into three different classes
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub(crate) enum W {
+    Word,
+    Double,
+    Big,
+}
+
+const MIN_DOUBLE_BITS: u32 = Word::BITS + 1;
+impl From<WidthInt> for W {
+    fn from(value: WidthInt) -> Self {
+        match value {
+            0 => panic!("zero bit is not supported!"),
+            1..=Word::BITS => Self::Word,
+            MIN_DOUBLE_BITS..=DoubleWord::BITS => Self::Double,
+            _ => Self::Big,
+        }
+    }
+}
+
+const FALS_VALUE: BitVecValueImpl = BitVecValueImpl::new_word(0, 1);
+const TRU_VALUE: BitVecValueImpl = BitVecValueImpl::new_word(1, 1);
 
 impl BitVecValue {
     /// Parse a string of 1s and 0s. The width of the resulting value is the number of digits.
     pub fn from_bit_str(value: &str) -> Result<Self, ParseIntError> {
-        let width = crate::bv::io::strings::determine_width_from_str_radix(value, 2);
+        let width = crate::bv::io::strings::determine_width_from_str_radix(value, 16);
         Self::from_str_radix(value, 2, width)
     }
 
@@ -31,9 +93,18 @@ impl BitVecValue {
     }
 
     pub fn from_str_radix(value: &str, radix: u32, width: WidthInt) -> Result<Self, ParseIntError> {
-        let mut out = Self::zero(width);
-        out.assign_from_str_radix(value, radix)?;
-        Ok(out)
+        let value = match width.into() {
+            W::Word => BitVecValueImpl::new_word(Word::from_str_radix(value, radix)?, width),
+            W::Double => {
+                BitVecValueImpl::new_double_word(DoubleWord::from_str_radix(value, radix)?, width)
+            }
+            W::Big => {
+                let mut out = Self::zero(width);
+                out.assign_from_str_radix(value, radix)?;
+                out.0
+            }
+        };
+        Ok(Self(value))
     }
 
     pub fn from_u64(value: u64, width: WidthInt) -> Self {
@@ -56,15 +127,33 @@ impl BitVecValue {
         }
     }
 
-    pub fn from_bytes_le(bytes: &[u8], bits: WidthInt) -> Self {
-        let mut words = value_vec_zeros(bits);
-        crate::bv::io::bytes::from_bytes_le(bytes, bits, words.as_mut());
-        Self { width: bits, words }
+    pub fn from_bytes_le(bytes: &[u8], width: WidthInt) -> Self {
+        debug_assert!(width.div_ceil(u8::BITS) as usize >= bytes.len());
+        Self(match width.into() {
+            W::Word => {
+                let mut b = [0u8; Word::BITS.div_ceil(u8::BITS) as usize];
+                b[0..bytes.len()].copy_from_slice(bytes);
+                BitVecValueImpl::new_word(Word::from_le_bytes(b), width)
+            }
+            W::Double => {
+                let mut b = [0u8; DoubleWord::BITS.div_ceil(u8::BITS) as usize];
+                b[0..bytes.len()].copy_from_slice(bytes);
+                BitVecValueImpl::new_double_word(DoubleWord::from_le_bytes(b), width)
+            }
+            W::Big => {
+                // let mut words = value_vec_zeros(bits);
+                // crate::bv::io::bytes::from_bytes_le(bytes, bits, words.as_mut());
+                todo!()
+            }
+        })
     }
 
     pub fn zero(width: WidthInt) -> Self {
-        let words = value_vec_zeros(width);
-        Self { width, words }
+        Self(match width.into() {
+            W::Word => BitVecValueImpl::new_word(0, width),
+            W::Double => BitVecValueImpl::new_double_word(0, width),
+            W::Big => BitVecValueImpl::new_big_zero(width),
+        })
     }
 
     pub fn ones(width: WidthInt) -> Self {
@@ -73,11 +162,12 @@ impl BitVecValue {
         out
     }
 
+    #[inline]
     pub fn tru() -> Self {
-        Self::from_u64(1, 1)
+        Self(TRU_VALUE.clone())
     }
     pub fn fals() -> Self {
-        Self::from_u64(0, 1)
+        Self(FALS_VALUE.clone())
     }
 
     #[cfg(feature = "bigint")]
@@ -92,11 +182,6 @@ impl BitVecValue {
         let mut words = value_vec_zeros(bits);
         crate::bv::io::bigint::from_big_uint(value, bits, &mut words);
         Self { width: bits, words }
-    }
-
-    /// Raw constructor for internal use.
-    pub(crate) fn new(width: WidthInt, words: ValueVec) -> Self {
-        Self { width, words }
     }
 }
 
@@ -116,15 +201,6 @@ impl<'a> From<BitVecValueRef<'a>> for BitVecValue {
 pub(crate) fn value_vec_zeros(width: WidthInt) -> ValueVec {
     vec![0; width.div_ceil(Word::BITS) as usize]
 }
-
-impl<V: BitVecOps> PartialEq<V> for BitVecValue {
-    fn eq(&self, other: &V) -> bool {
-        debug_assert!(other.width() != self.width || other.words().len() == self.words.len());
-        other.width() == self.width && other.words() == self.words.as_slice()
-    }
-}
-
-impl Eq for BitVecValue {}
 
 impl<V: BitVecOps> std::ops::Add<&V> for &BitVecValue {
     type Output = BitVecValue;
