@@ -5,9 +5,8 @@
 
 use crate::bv::io::strings::ParseIntError;
 use crate::{BitVecMutOps, BitVecOps, BitVecValueRef, WidthInt, Word};
-use smallvec::{smallvec, SmallVec};
 
-pub(crate) type ValueVec = SmallVec<[Word; 2]>;
+pub(crate) type ValueVec = Vec<Word>;
 
 /// Owned bit-vector value.
 /// Note: Ord does not necessarily order by value.
@@ -109,13 +108,13 @@ impl From<bool> for BitVecValue {
 
 impl<'a> From<BitVecValueRef<'a>> for BitVecValue {
     fn from(value: BitVecValueRef<'a>) -> Self {
-        Self::new(value.width, SmallVec::from_slice(value.words))
+        Self::new(value.width, Vec::from(value.words))
     }
 }
 
 #[inline]
 pub(crate) fn value_vec_zeros(width: WidthInt) -> ValueVec {
-    smallvec![0; width.div_ceil(Word::BITS) as usize]
+    vec![0; width.div_ceil(Word::BITS) as usize]
 }
 
 impl<V: BitVecOps> PartialEq<V> for BitVecValue {
