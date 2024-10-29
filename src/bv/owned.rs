@@ -7,8 +7,6 @@ use crate::bv::borrowed::BitVecValueRefImpl;
 use crate::bv::io::strings::ParseIntError;
 use crate::{BitVecMutOps, BitVecOps, BitVecValueRef, DoubleWord, WidthInt, Word};
 
-pub(crate) type ValueVec = Vec<Word>;
-
 /// Owned bit-vector value.
 /// Note: Ord does not necessarily order by value.
 #[derive(Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
@@ -89,18 +87,9 @@ impl BitVecValue {
     }
 
     pub fn from_str_radix(value: &str, radix: u32, width: WidthInt) -> Result<Self, ParseIntError> {
-        let value = match width.into() {
-            W::Word => BitVecValueImpl::new_word(Word::from_str_radix(value, radix)?, width),
-            W::Double => {
-                BitVecValueImpl::new_double_word(DoubleWord::from_str_radix(value, radix)?, width)
-            }
-            W::Big => {
-                let mut out = Self::zero(width);
-                out.assign_from_str_radix(value, radix)?;
-                out.0
-            }
-        };
-        Ok(Self(value))
+        let mut out = Self::zero(width);
+        out.assign_from_str_radix(value, radix)?;
+        Ok(out)
     }
 
     pub fn from_u64(value: u64, width: WidthInt) -> Self {
@@ -195,11 +184,6 @@ impl<'a> From<BitVecValueRef<'a>> for BitVecValue {
             BitVecValueRefImpl::Big(width, value) => BitVecValueImpl::Big(width, Box::from(value)),
         })
     }
-}
-
-#[inline]
-pub(crate) fn value_vec_zeros(width: WidthInt) -> ValueVec {
-    vec![0; width.div_ceil(Word::BITS) as usize]
 }
 
 impl<V: BitVecOps> std::ops::Add<&V> for &BitVecValue {

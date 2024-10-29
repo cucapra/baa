@@ -390,11 +390,12 @@ fn parse_base_2(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bv::owned::value_vec_zeros;
+    use crate::{BitVecMutOps, BitVecOps, BitVecValue};
 
     #[test]
     fn test_to_bit_str_with_extra_words() {
-        let input = value_vec_zeros(7);
+        let value = BitVecValue::zero(7);
+        let input = value.words();
         assert_eq!(to_bit_str(&input, 7), "0000000");
         assert_eq!(to_bit_str(&input, 33), "0".repeat(33));
     }
@@ -407,12 +408,14 @@ mod tests {
 
     #[test]
     fn test_to_hex_str() {
-        let mut input = value_vec_zeros(64);
+        let mut value = BitVecValue::zero(64);
+        let input = value.words_mut();
         assert_eq!(to_hex_str(&input, 7), "00");
         assert_eq!(to_hex_str(&input, 33), "0".repeat(9));
         input[0] = 0xa4aa78;
         assert_eq!(to_hex_str(&input, 6 * 4), "a4aa78");
-        let mut input = value_vec_zeros(128);
+        let mut value = BitVecValue::zero(128);
+        let input = value.words_mut();
         input[0] = 0xaaaaaaaaaaaaaaaa;
         assert_eq!(to_hex_str(&input, 7 + Word::BITS), "00aaaaaaaaaaaaaaaa");
         assert_eq!(
@@ -425,7 +428,8 @@ mod tests {
             "a4aa78aaaaaaaaaaaaaaaa"
         );
         // regressions test
-        let mut input = value_vec_zeros(64);
+        let mut value = BitVecValue::zero(64);
+        let input = value.words_mut();
         input[0] = 768603298337958570;
         assert_eq!(to_hex_str(&input, 64), "0aaaa0a0aaa0aaaa");
     }
