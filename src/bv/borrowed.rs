@@ -144,9 +144,8 @@ mod tests {
         let value_hash = get_hash(&value);
         let re = BitVecValueRef::from(&value);
         let re_hash = get_hash(&re);
-        // TODO
-        // assert_eq!(value, re);
-        // assert_eq!(value_hash, re_hash);
+        assert_eq!(value, re);
+        assert_eq!(value_hash, re_hash);
     }
 
     #[test]

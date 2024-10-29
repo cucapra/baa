@@ -2,21 +2,20 @@
 // Copyright 2024 Cornell University
 // released under BSD 3-Clause License
 // author: Kevin Laeufer <laeufer@cornell.edu>
-
 use crate::bv::borrowed::BitVecValueRefImpl;
 use crate::bv::io::strings::ParseIntError;
 use crate::{BitVecMutOps, BitVecOps, BitVecValueRef, DoubleWord, WidthInt, Word};
 
 /// Owned bit-vector value.
 /// Note: Ord does not necessarily order by value.
-#[derive(Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Hash, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde1", derive(serde::Serialize, serde::Deserialize))]
 pub struct BitVecValue(pub(super) BitVecValueImpl);
 
 /// Implementation enum for the owned bit-vector value.
 /// We hide this inside a `pub struct` in order not to expose the individual enum entries to the
 /// user.
-#[derive(Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Hash, PartialOrd, Ord, Eq, PartialEq)]
 #[cfg_attr(feature = "serde1", derive(serde::Serialize, serde::Deserialize))]
 pub(super) enum BitVecValueImpl {
     Word(WidthInt, Word),
@@ -169,6 +168,18 @@ impl BitVecValue {
         out
     }
 }
+
+impl<O: BitVecOps> PartialEq<O> for BitVecValue {
+    fn eq(&self, other: &O) -> bool {
+        if other.width() == self.width() {
+            self.is_equal(other)
+        } else {
+            false
+        }
+    }
+}
+
+impl Eq for BitVecValue {}
 
 impl From<bool> for BitVecValue {
     fn from(value: bool) -> Self {
