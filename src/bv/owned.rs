@@ -13,8 +13,8 @@ pub(crate) type ValueVec = Vec<Word>;
 #[derive(Clone, Hash, Ord, PartialOrd)]
 #[cfg_attr(feature = "serde1", derive(serde::Serialize, serde::Deserialize))]
 pub struct BitVecValue {
-    pub(crate) width: WidthInt,
-    pub(crate) words: ValueVec,
+    width: WidthInt,
+    words: ValueVec,
 }
 
 impl BitVecValue {

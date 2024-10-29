@@ -22,7 +22,7 @@ impl<'a> BitVecValueRef<'a> {
 
 impl<'a> From<&'a BitVecValue> for BitVecValueRef<'a> {
     fn from(value: &'a BitVecValue) -> Self {
-        Self::new(value.width, value.words.as_ref())
+        Self::new(value.width(), value.words().as_ref())
     }
 }
 
@@ -57,7 +57,7 @@ impl<'a> BitVecValueMutRef<'a> {
 
 impl<'a> From<&'a mut BitVecValue> for BitVecValueMutRef<'a> {
     fn from(value: &'a mut BitVecValue) -> Self {
-        Self::new(value.width, value.words.as_mut())
+        Self::new(value.width(), value.words_mut())
     }
 }
 impl std::fmt::Debug for BitVecValueMutRef<'_> {
