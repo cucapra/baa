@@ -364,15 +364,34 @@ mod tests {
         assert_eq!(BitVecValue::from_big_int(value, width), v0);
     }
 
-    #[allow(unused)]
+    #[cfg(test)]
+    fn gen_big_uint(bits: WidthInt) -> impl Strategy<Value = BigUint> {
+        let byte_count = bits.div_ceil(u8::BITS);
+        let words = prop::collection::vec(any::<u8>(), byte_count as usize);
+        words.prop_map(move |mut words| {
+            // first we mask the msbs
+            if bits % u8::BITS > 0 {
+                let mask = (1u8 << (bits % u8::BITS)) - 1;
+                *words.last_mut().unwrap() &= mask;
+            }
+            BigUint::from_bytes_le(&words)
+        })
+    }
+
+    #[cfg(test)]
+    fn gen_big_int(bits: WidthInt) -> impl Strategy<Value = BigInt> {
+        gen_big_uint(bits - 1)
+            .prop_flat_map(|unsigned| (any::<bool>(), Just(unsigned)))
+            .prop_map(|(negative, unsigned)| {
+                let sign = if negative { Sign::Minus } else { Sign::Plus };
+                BigInt::from_biguint(sign, unsigned)
+            })
+    }
+
+    #[cfg(test)]
     fn gen_big_int_and_width() -> impl Strategy<Value = (BigInt, WidthInt)> {
         let max_bits = 16 * Word::BITS;
-        (1..max_bits).prop_flat_map(|width| {
-            (
-                crate::bv::arithmetic::tests::gen_big_int(width),
-                Just(width),
-            )
-        })
+        (1..max_bits).prop_flat_map(|width| (gen_big_int(width), Just(width)))
     }
 
     proptest! {
