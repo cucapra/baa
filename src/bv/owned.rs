@@ -78,7 +78,7 @@ const TRU_VALUE: BitVecValueImpl = BitVecValueImpl::new_word(1, 1);
 impl BitVecValue {
     /// Parse a string of 1s and 0s. The width of the resulting value is the number of digits.
     pub fn from_bit_str(value: &str) -> Result<Self, ParseIntError> {
-        let width = crate::bv::io::strings::determine_width_from_str_radix(value, 16);
+        let width = crate::bv::io::strings::determine_width_from_str_radix(value, 2);
         Self::from_str_radix(value, 2, width)
     }
 

@@ -72,7 +72,7 @@ fn do_test_shift(src: &str, by: WidthInt, right: bool, signed: bool) {
         expected = msb;
     }
     let expected = BitVecValue::from_bit_str(&expected).unwrap();
-    assert_eq!(res, expected);
+    assert_eq!(res, expected, "{src:?} {by} {res:?} {expected:?}");
 }
 
 fn do_test_shift_right(src: &str, by: WidthInt) {
