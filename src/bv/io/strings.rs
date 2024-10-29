@@ -380,43 +380,6 @@ fn parse_base_2(
 mod tests {
     use super::*;
     use crate::bv::owned::value_vec_zeros;
-    use crate::{BitVecOps, BitVecValue};
-    use proptest::proptest;
-
-    fn do_test_from_to_bit_str(s: &str) {
-        let words = s.len().div_ceil(Word::BITS as usize);
-        let mut out = vec![0; words];
-
-        // test width determination function
-        let width = determine_width_from_str_radix(s, 2);
-        if s.starts_with('+') {
-            assert_eq!(width as usize, s.len() - 1);
-        } else {
-            assert_eq!(width as usize, s.len());
-        }
-
-        // do actual conversion
-        from_str_radix(s, 2, &mut out, width).unwrap();
-        crate::bv::arithmetic::assert_unused_bits_zero(&out, width);
-        let s_out = if s.starts_with('-') {
-            to_bit_str_signed(&out, width)
-        } else {
-            to_bit_str(&out, width)
-        };
-
-        // test for expected output
-        if let Some(without_plus) = s.strip_prefix('+') {
-            assert_eq!(without_plus, s_out);
-        } else if let Some(without_minus) = s.strip_prefix('-') {
-            if without_minus.chars().all(|c| c == '0') {
-                assert_eq!(without_minus, s_out);
-            } else {
-                assert_eq!(s, s_out);
-            }
-        } else {
-            assert_eq!(s, s_out);
-        }
-    }
 
     #[test]
     fn test_to_bit_str_with_extra_words() {
@@ -426,60 +389,9 @@ mod tests {
     }
 
     #[test]
-    fn test_from_to_bit_str_regression() {
-        do_test_from_to_bit_str("+0");
-        do_test_from_to_bit_str("-0");
-        do_test_from_to_bit_str("-1");
-        do_test_from_to_bit_str("-11");
-    }
-
-    fn do_test_from_to_hex_str(s: &str) {
-        // test width determination function
-        let width = determine_width_from_str_radix(s, 16);
-        if s.starts_with('+') {
-            assert_eq!(width as usize, (s.len() - 1) * 4);
-        } else if s.starts_with('-') {
-            assert_eq!(width as usize, (s.len() - 1) * 4 + 1);
-        } else {
-            assert_eq!(width as usize, s.len() * 4);
-        }
-
-        // do actual conversion
-        let words = width.div_ceil(Word::BITS) as usize;
-        let mut out = vec![0; words];
-        from_str_radix(s, 16, &mut out, width).unwrap();
-        crate::bv::arithmetic::assert_unused_bits_zero(&out, width);
-        let s_out = if s.starts_with('-') {
-            to_hex_str_signed(&out, width)
-        } else {
-            to_hex_str(&out, width)
-        };
-
-        // test for expected output
-        if let Some(without_plus) = s.strip_prefix('+') {
-            assert_eq!(without_plus.to_ascii_lowercase(), s_out);
-        } else if let Some(without_minus) = s.strip_prefix('-') {
-            if without_minus.chars().all(|c| c == '0') {
-                assert_eq!(without_minus.to_ascii_lowercase(), s_out);
-            } else {
-                assert_eq!(s.to_ascii_lowercase(), s_out);
-            }
-        } else {
-            assert_eq!(s.to_ascii_lowercase(), s_out);
-        }
-    }
-
-    #[test]
-    fn test_from_to_hex_str_regression() {
+    fn test_hex_digit_value() {
         assert_eq!(hex_digit_value(b'a').unwrap(), 10);
         assert_eq!(hex_digit_value(b'A').unwrap(), 10);
-        do_test_from_to_hex_str("a");
-        do_test_from_to_hex_str("A");
-        do_test_from_to_hex_str("0aaaA0a0aAA0aaaA");
-        do_test_from_to_hex_str("+A");
-        do_test_from_to_hex_str("0");
-        do_test_from_to_hex_str("+aaaa0aa0aaaa0aaa00a0aaaaaa00aa00");
-        do_test_from_to_hex_str("-aaaa00aaaaaaaaa0");
     }
 
     #[test]
@@ -505,33 +417,5 @@ mod tests {
         let mut input = value_vec_zeros(64);
         input[0] = 768603298337958570;
         assert_eq!(to_hex_str(&input, 64), "0aaaa0a0aaa0aaaa");
-    }
-
-    fn do_test_to_from_decimal_str(s: &str) {
-        let expected = BitVecValue::from_bit_str(s).unwrap();
-        let dec_str = expected.to_dec_str();
-        let actual = BitVecValue::from_str_radix(&dec_str, 10, expected.width).unwrap();
-        assert_eq!(expected, actual);
-    }
-
-    #[test]
-    fn test_to_from_dec_str_regression() {
-        do_test_to_from_decimal_str("");
-        do_test_to_from_decimal_str("1000000");
-    }
-
-    proptest! {
-        #[test]
-        fn test_from_to_bit_str(s in "(([-+])?[01]+)|()") {
-            do_test_from_to_bit_str(&s);
-        }
-        #[test]
-        fn test_from_to_hex_str(s in "(([-+])?[01a-fA-F]+)|()") {
-            do_test_from_to_hex_str(&s);
-        }
-        #[test]
-        fn test_to_from_decimal_str(s in "(([-+])?[01]+)|()") {
-            do_test_to_from_decimal_str(&s);
-        }
     }
 }
