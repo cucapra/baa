@@ -53,10 +53,7 @@ where
     I: Borrow<BitVecValueIndex>,
 {
     fn get_ref(self, index: I) -> BitVecValueRef<'a> {
-        BitVecValueRef {
-            width: index.borrow().width,
-            words: &self[index.borrow().to_range()],
-        }
+        BitVecValueRef::new(&self[index.borrow().to_range()], index.borrow().width())
     }
 }
 
@@ -66,14 +63,8 @@ where
 {
     fn get_ref(self, (a, b): (I, I)) -> (BitVecValueRef<'a>, BitVecValueRef<'a>) {
         (
-            BitVecValueRef {
-                width: a.borrow().width,
-                words: &self[a.borrow().to_range()],
-            },
-            BitVecValueRef {
-                width: b.borrow().width,
-                words: &self[b.borrow().to_range()],
-            },
+            BitVecValueRef::new(&self[a.borrow().to_range()], a.borrow().width()),
+            BitVecValueRef::new(&self[b.borrow().to_range()], b.borrow().width()),
         )
     }
 }
@@ -107,10 +98,7 @@ where
                 width: a.borrow().width,
                 words: a_words,
             },
-            BitVecValueRef {
-                width: b.borrow().width,
-                words: b_words,
-            },
+            BitVecValueRef::new(b_words, b.borrow().width),
         )
     }
 }
@@ -147,14 +135,8 @@ where
                 width: a.borrow().width,
                 words: a_words,
             },
-            BitVecValueRef {
-                width: b.borrow().width,
-                words: b_words,
-            },
-            BitVecValueRef {
-                width: c.borrow().width,
-                words: c_words,
-            },
+            BitVecValueRef::new(b_words, b.borrow().width),
+            BitVecValueRef::new(c_words, c.borrow().width),
         )
     }
 }

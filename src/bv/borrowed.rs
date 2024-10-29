@@ -4,16 +4,16 @@
 //
 // Borrowed bit-vector and array values.
 
-use crate::bv::owned::{double_word_from_words, BitVecValueImpl, W};
+use crate::bv::owned::BitVecValueImpl;
 use crate::{BitVecMutOps, BitVecOps, BitVecValue, WidthInt, Word};
 use std::borrow::Borrow;
 
 /// Bit-vector value that does not own its storage.
 #[derive(Clone, Copy, Hash)]
-pub struct BitVecValueRef<'a>(BitVecValueRefImpl<'a>);
+pub struct BitVecValueRef<'a>(pub(super) BitVecValueRefImpl<'a>);
 
 #[derive(Clone, Copy, Hash)]
-enum BitVecValueRefImpl<'a> {
+pub(super) enum BitVecValueRefImpl<'a> {
     Word(WidthInt, Word),
     Double(WidthInt, [Word; 2]),
     Big(WidthInt, &'a [Word]),
@@ -83,11 +83,19 @@ impl std::fmt::Debug for BitVecValueMutRef<'_> {
 
 impl BitVecOps for BitVecValueRef<'_> {
     fn width(&self) -> WidthInt {
-        self.width
+        match &self.0 {
+            BitVecValueRefImpl::Word(w, _) => *w,
+            BitVecValueRefImpl::Double(w, _) => *w,
+            BitVecValueRefImpl::Big(w, _) => *w,
+        }
     }
 
     fn words(&self) -> &[Word] {
-        self.words
+        match &self.0 {
+            BitVecValueRefImpl::Word(_, value) => std::slice::from_ref(value),
+            BitVecValueRefImpl::Double(_, value) => value.as_slice(),
+            BitVecValueRefImpl::Big(_, value) => value.as_ref(),
+        }
     }
 }
 
@@ -136,6 +144,7 @@ mod tests {
         let value_hash = get_hash(&value);
         let re = BitVecValueRef::from(&value);
         let re_hash = get_hash(&re);
+        // TODO
         // assert_eq!(value, re);
         // assert_eq!(value_hash, re_hash);
     }

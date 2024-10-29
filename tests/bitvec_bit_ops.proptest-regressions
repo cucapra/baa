@@ -1,0 +1,14 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 0823fc30c0944231379a0a9caed263a7aa73eacd17d2a05bfe2ee386d07e04f5 # shrinks to s = "0", by = 1
+cc aefecb1676d6116f6365a85fe0aec9cdd62d260e9cab9962127e8ccee5f74c98 # shrinks to s = "0", by = 1
+cc 44d2d24dc3062934c008fcc700317f295eac25b530e20a9d77d3ba3f7b1f3bba # shrinks to a = "1"
+cc 3bbfd97a62806958270083420e0610b76c7d9cbba387d18267282dea70c27e84 # shrinks to (s, by) = ("0", 1)
+cc 9d84157c32f6899e86116213ea08f71ca0845051a9ddb946cbd31d1ddd676ba4 # shrinks to a = "0", b = "0"
+cc 0a654d8375ec8c9dcefdf50b31d2c95cd7e830ecf299c22730831df77449c215 # shrinks to (s, msb, lsb) = ("0", 0, 0)
+cc df0eabe34c344e85fc6718b80a7468463f92bf8ce4958a63dfcbd8286a5fa0c5 # shrinks to (s, by) = ("0", 1)
+cc e61c7ba99e139e82fea7f785cb9a03f93cea023b16e50c3fdf7d9ffb44f54cf8 # shrinks to (s, by) = ("00", 3)

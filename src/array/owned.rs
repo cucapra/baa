@@ -281,7 +281,7 @@ fn approx_dense_storage_size(index_width: WidthInt, data_width: WidthInt) -> usi
 impl DenseArrayValue {
     fn new<'a>(index_width: WidthInt, default: impl Into<BitVecValueRef<'a>>) -> Self {
         let default = default.into();
-        let data_width = default.width;
+        let data_width = default.width();
         let storage_size = approx_dense_storage_size(index_width, data_width);
         debug_assert!(
             storage_size <= DENSE_ARRAY_MAX_BYTES,
@@ -350,7 +350,7 @@ impl DenseArrayValue {
             DenseArrayImpl::Big(values) => {
                 let start = self.words_per_element() * index;
                 let end = start + self.words_per_element();
-                let value_ref = BitVecValueRef::new(self.data_width(), &values[start..end]);
+                let value_ref = BitVecValueRef::new(&values[start..end], self.data_width());
                 value_ref.into()
             }
         }
@@ -595,7 +595,7 @@ enum SparseArrayImpl {
 impl SparseArrayValue {
     pub fn new<'a>(index_width: WidthInt, default: impl Into<BitVecValueRef<'a>>) -> Self {
         let default = default.into();
-        let data_width = default.width;
+        let data_width = default.width();
         let data = if index_width > Word::BITS {
             SparseArrayImpl::BigBig(default.into(), HashMap::new())
         } else if data_width > Word::BITS {
@@ -859,9 +859,9 @@ mod tests {
     fn type_size() {
         // Dense Array Size
         assert_eq!(std::mem::size_of::<Vec<u8>>(), 24);
-        assert_eq!(std::mem::size_of::<BitVecValue>(), 32);
-        assert_eq!(std::mem::size_of::<DenseArrayImpl>(), 40); // BitVecValue size + tag + padding
-        assert_eq!(std::mem::size_of::<DenseArrayValue>(), 48); // Impl + size + padding
+        assert_eq!(std::mem::size_of::<BitVecValue>(), 3 * 8);
+        assert_eq!(std::mem::size_of::<DenseArrayImpl>(), 4 * 8); // BitVecValue size + tag + padding
+        assert_eq!(std::mem::size_of::<DenseArrayValue>(), (4 + 1) * 8); // Impl + size + padding
 
         // Sparse Array Size
 
@@ -871,8 +871,8 @@ mod tests {
         assert_eq!(std::mem::size_of::<HashMap<BitVecValue, BitVecValue>>(), 48);
 
         // HashMap + BitVecValue + tag + padding
-        assert_eq!(std::mem::size_of::<SparseArrayImpl>(), 48 + 32 + 8);
-        assert_eq!(std::mem::size_of::<SparseArrayValue>(), 88 + 8); // Impl + size + padding
+        assert_eq!(std::mem::size_of::<SparseArrayImpl>(), 48 + 24 + 8);
+        assert_eq!(std::mem::size_of::<SparseArrayValue>(), 80 + 8); // Impl + size + padding
     }
 
     #[test]

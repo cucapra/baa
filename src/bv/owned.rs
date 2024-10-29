@@ -3,6 +3,7 @@
 // released under BSD 3-Clause License
 // author: Kevin Laeufer <laeufer@cornell.edu>
 
+use crate::bv::borrowed::BitVecValueRefImpl;
 use crate::bv::io::strings::ParseIntError;
 use crate::{BitVecMutOps, BitVecOps, BitVecValueRef, DoubleWord, WidthInt, Word};
 
@@ -46,14 +47,9 @@ impl BitVecValueImpl {
     }
 }
 
-pub(crate) fn double_word_to_words(value: DoubleWord) -> [Word; 2] {
+const fn double_word_to_words(value: DoubleWord) -> [Word; 2] {
     // lsb first, then msb
     [value as Word, (value >> Word::BITS) as Word]
-}
-
-pub(crate) fn double_word_from_words(lsb: Word, msb: Word) -> DoubleWord {
-    // lsb first, then msb
-    (lsb as DoubleWord) | ((msb as DoubleWord) << Word::BITS)
 }
 
 /// divides width into three different classes
@@ -172,16 +168,16 @@ impl BitVecValue {
 
     #[cfg(feature = "bigint")]
     pub fn from_big_int(value: &num_bigint::BigInt, bits: WidthInt) -> Self {
-        let mut words = value_vec_zeros(bits);
-        crate::bv::io::bigint::from_big_int(value, bits, &mut words);
-        Self { width: bits, words }
+        let mut out = Self::zero(bits);
+        crate::bv::io::bigint::from_big_int(value, bits, out.words_mut());
+        out
     }
 
     #[cfg(feature = "bigint")]
     pub fn from_big_uint(value: &num_bigint::BigUint, bits: WidthInt) -> Self {
-        let mut words = value_vec_zeros(bits);
-        crate::bv::io::bigint::from_big_uint(value, bits, &mut words);
-        Self { width: bits, words }
+        let mut out = Self::zero(bits);
+        crate::bv::io::bigint::from_big_uint(value, bits, out.words_mut());
+        out
     }
 }
 
@@ -193,7 +189,11 @@ impl From<bool> for BitVecValue {
 
 impl<'a> From<BitVecValueRef<'a>> for BitVecValue {
     fn from(value: BitVecValueRef<'a>) -> Self {
-        Self::new(value.width, Vec::from(value.words))
+        Self(match value.0 {
+            BitVecValueRefImpl::Word(width, value) => BitVecValueImpl::Word(width, value),
+            BitVecValueRefImpl::Double(width, value) => BitVecValueImpl::Double(width, value),
+            BitVecValueRefImpl::Big(width, value) => BitVecValueImpl::Big(width, Box::from(value)),
+        })
     }
 }
 
@@ -242,17 +242,29 @@ impl From<&num_bigint::BigUint> for BitVecValue {
 
 impl BitVecOps for BitVecValue {
     fn width(&self) -> WidthInt {
-        self.width
+        match &self.0 {
+            BitVecValueImpl::Word(w, _) => *w,
+            BitVecValueImpl::Double(w, _) => *w,
+            BitVecValueImpl::Big(w, _) => *w,
+        }
     }
 
     fn words(&self) -> &[Word] {
-        &self.words
+        match &self.0 {
+            BitVecValueImpl::Word(_, value) => std::slice::from_ref(value),
+            BitVecValueImpl::Double(_, value) => value.as_slice(),
+            BitVecValueImpl::Big(_, value) => value.as_ref(),
+        }
     }
 }
 
 impl BitVecMutOps for BitVecValue {
     fn words_mut(&mut self) -> &mut [Word] {
-        &mut self.words
+        match &mut self.0 {
+            BitVecValueImpl::Word(_, value) => std::slice::from_mut(value),
+            BitVecValueImpl::Double(_, value) => value.as_mut_slice(),
+            BitVecValueImpl::Big(_, value) => value.as_mut(),
+        }
     }
 }
 
@@ -266,19 +278,10 @@ mod tests {
         assert_eq!(std::mem::size_of::<WidthInt>(), 4);
         // we use a 64-bit word size
         assert_eq!(std::mem::size_of::<Word>(), 8);
-        assert_eq!(std::mem::size_of::<[Word; 2]>(), 16);
-        // 8 bytes (usize) for the capacity, 8 byte pointer + 8 byte allocation size
-        assert_eq!(std::mem::size_of::<ValueVec>(), 8 + 8 + 8);
-        assert_eq!(
-            std::mem::size_of::<ValueVec>(),
-            std::mem::size_of::<Vec<Word>>()
-        );
+        assert_eq!(std::mem::size_of::<[Word; 2]>(), 2 * 8);
+        assert_eq!(std::mem::size_of::<Box<[Word]>>(), 2 * 8);
         // width + value + padding
-        assert_eq!(std::mem::size_of::<BitVecValue>(), 4 * 8);
-        assert_eq!(
-            std::mem::size_of::<BitVecValue>(),
-            std::mem::size_of::<ValueVec>() + std::mem::size_of::<WidthInt>() + 4
-        );
+        assert_eq!(std::mem::size_of::<BitVecValueImpl>(), 3 * 8);
     }
 
     #[test]
@@ -328,8 +331,8 @@ mod tests {
     #[test]
     fn test_ones() {
         let a = BitVecValue::ones(3);
-        assert_eq!(a.words.as_slice(), &[0b111]);
+        assert_eq!(a.words(), &[0b111]);
         let b = BitVecValue::ones(3 + Word::BITS);
-        assert_eq!(b.words.as_slice(), &[Word::MAX, 0b111]);
+        assert_eq!(b.words(), &[Word::MAX, 0b111]);
     }
 }
