@@ -234,15 +234,52 @@ pub(crate) fn sub(dst: &mut [Word], a: &[Word], b: &[Word], width: WidthInt) {
 /// Mul function inspired by the num-bigint implementation: https://docs.rs/num-bigint/0.4.4/src/num_bigint/biguint/multiplication.rs.html
 #[inline]
 pub(crate) fn mul(dst: &mut [Word], a: &[Word], b: &[Word], width: WidthInt) {
-    if width <= Word::BITS {
-        let (res, _) = a[0].overflowing_mul(b[0]);
-        dst[0] = res & mask(width);
-    } else {
-        todo!(
-            "implement multiplication for bit vectors larger {}",
-            Word::BITS
-        );
+    debug_assert_eq!(dst.len(), a.len());
+    debug_assert_eq!(a.len(), b.len());
+    debug_assert!(
+        a.len() > 2,
+        "for smaller sizes, multiply directly on u64/u128"
+    );
+    debug_assert_eq!(width.div_ceil(Word::BITS) as usize, a.len());
+
+    clear(dst);
+
+    // we calculate dst += a * b
+    for (dd, (aa, bb)) in dst.iter_mut().zip(a.iter().zip(b.iter())) {}
+
+    todo!()
+}
+
+fn mac_digit(acc: &mut [Word], b: &[Word], c: Word) {
+    if c == 0 {
+        return;
     }
+
+    let mut carry = 0;
+    let (a_lo, a_hi) = acc.split_at_mut(b.len());
+
+    for (a, &b) in a_lo.iter_mut().zip(b) {
+        *a = mac_with_carry(*a, b, c, &mut carry);
+    }
+
+    let carry_hi = (carry >> Word::BITS) as Word;
+    let carry_lo = carry as Word;
+
+    let final_carry = if carry_hi == 0 {
+        todo!() // __add2(a_hi, &[carry_lo])
+    } else {
+        todo!() // __add2(a_hi, &[carry_hi, carry_lo])
+    };
+    // assert_eq!(final_carry, 0, "carry overflow during multiplication!");
+}
+
+#[inline]
+pub(super) fn mac_with_carry(a: Word, b: Word, c: Word, acc: &mut DoubleWord) -> Word {
+    *acc += DoubleWord::from(a);
+    *acc += DoubleWord::from(b) * DoubleWord::from(c);
+    let lo = *acc as Word;
+    *acc >>= Word::BITS;
+    lo
 }
 
 #[inline]
