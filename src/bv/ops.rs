@@ -5,8 +5,10 @@
 //
 // Traits for operations on bit-vectors.
 
+use crate::bv::arithmetic::mask_double_word;
 use crate::bv::io::strings::ParseIntError;
-use crate::{BitVecValue, BitVecValueRef, WidthInt, Word};
+use crate::bv::owned::{double_word_from_words, double_word_to_words};
+use crate::{mask, BitVecValue, BitVecValueRef, DoubleWord, WidthInt, Word};
 
 /// Declares an arithmetic function which takes in two equal size bitvector and yields a
 /// bitvector of the same size.
@@ -204,7 +206,29 @@ pub trait BitVecOps {
     declare_arith_bin_fn!(shift_left);
     declare_arith_bin_fn!(shift_right);
     declare_arith_bin_fn!(arithmetic_shift_right);
-    declare_arith_bin_fn!(mul);
+
+    fn mul<R: BitVecOps>(&self, rhs: &R) -> BitVecValue {
+        debug_assert_eq!(self.width(), rhs.width());
+        debug_assert_eq!(self.words().len(), rhs.words().len());
+        match (self.words(), rhs.words()) {
+            ([a], [b]) => {
+                BitVecValue::from_u64(a.overflowing_mul(*b).0 & mask(self.width()), self.width())
+            }
+            ([a_lsb, a_msb], [b_lsb, b_msb]) => BitVecValue::from_u128(
+                double_word_from_words(*a_lsb, *a_msb)
+                    .overflowing_mul(double_word_from_words(*b_lsb, *b_msb))
+                    .0
+                    & mask_double_word(self.width()),
+                self.width(),
+            ),
+            (a_words, b_words) => {
+                let mut out = BitVecValue::zero(self.width());
+                crate::bv::arithmetic::mul(out.words_mut(), a_words, b_words, self.width());
+                out
+            }
+        }
+    }
+
     declare_bit_arith_bin_fn!(and);
     declare_bit_arith_bin_fn!(or);
     declare_bit_arith_bin_fn!(xor);
@@ -446,6 +470,34 @@ pub trait BitVecMutOps: BitVecOps {
         debug_assert_eq!(
             self.words()[0],
             value,
+            "value {value} does not fit into {} bits",
+            self.width()
+        );
+    }
+
+    fn assign_from_u128(&mut self, value: u128) {
+        debug_assert_eq!(
+            DoubleWord::BITS,
+            u128::BITS,
+            "basic assumption of this function"
+        );
+        // clear all words
+        self.clear();
+        // assign values
+        let words = double_word_to_words(value);
+        self.words_mut()[0] = words[0];
+        self.words_mut()[1] = words[1];
+        // make sure the value agrees with the bit width
+        self.mask_msb();
+        debug_assert_eq!(
+            self.words()[0],
+            words[0],
+            "value {value} does not fit into {} bits",
+            self.width()
+        );
+        debug_assert_eq!(
+            self.words()[1],
+            words[1],
             "value {value} does not fit into {} bits",
             self.width()
         );

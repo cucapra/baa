@@ -22,6 +22,16 @@ pub fn mask(bits: WidthInt) -> Word {
 }
 
 #[inline]
+pub fn mask_double_word(bits: WidthInt) -> DoubleWord {
+    if bits == DoubleWord::BITS || bits == 0 {
+        DoubleWord::MAX
+    } else {
+        assert!(bits < DoubleWord::BITS);
+        ((1 as DoubleWord) << bits) - 1
+    }
+}
+
+#[inline]
 pub(crate) fn clear(dst: &mut [Word]) {
     for w in dst.iter_mut() {
         *w = 0;

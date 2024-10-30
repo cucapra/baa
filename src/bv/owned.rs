@@ -2,9 +2,10 @@
 // Copyright 2024 Cornell University
 // released under BSD 3-Clause License
 // author: Kevin Laeufer <laeufer@cornell.edu>
+use crate::bv::arithmetic::mask_double_word;
 use crate::bv::borrowed::BitVecValueRefImpl;
 use crate::bv::io::strings::ParseIntError;
-use crate::{BitVecMutOps, BitVecOps, BitVecValueRef, DoubleWord, WidthInt, Word};
+use crate::{mask, BitVecMutOps, BitVecOps, BitVecValueRef, DoubleWord, WidthInt, Word};
 
 /// Owned bit-vector value.
 /// Note: Ord does not necessarily order by value.
@@ -44,9 +45,15 @@ impl BitVecValueImpl {
     }
 }
 
-const fn double_word_to_words(value: DoubleWord) -> [Word; 2] {
+#[inline]
+pub(super) const fn double_word_to_words(value: DoubleWord) -> [Word; 2] {
     // lsb first, then msb
     [value as Word, (value >> Word::BITS) as Word]
+}
+
+#[inline]
+pub(super) const fn double_word_from_words(lsb: Word, msb: Word) -> DoubleWord {
+    lsb as DoubleWord | (msb as DoubleWord) << Word::BITS
 }
 
 /// divides width into three different classes
@@ -92,9 +99,48 @@ impl BitVecValue {
     }
 
     pub fn from_u64(value: u64, width: WidthInt) -> Self {
-        let mut out = Self::zero(width);
-        out.assign_from_u64(value);
-        out
+        match width.into() {
+            W::Word => {
+                debug_assert_eq!(
+                    value & mask(width),
+                    value,
+                    "{value} does not fit into {width} bits"
+                );
+                Self(BitVecValueImpl::new_word(value, width))
+            }
+            W::Double => Self(BitVecValueImpl::new_double_word(value as DoubleWord, width)),
+            W::Big => {
+                let mut out = Self::zero(width);
+                out.assign_from_u64(value);
+                out
+            }
+        }
+    }
+
+    pub fn from_u128(value: u128, width: WidthInt) -> Self {
+        match width.into() {
+            W::Word => {
+                debug_assert_eq!(
+                    value as Word & mask(width),
+                    value as Word,
+                    "{value} does not fit into {width} bits"
+                );
+                Self(BitVecValueImpl::new_word(value as Word, width))
+            }
+            W::Double => {
+                debug_assert_eq!(
+                    value & mask_double_word(width),
+                    value,
+                    "{value} does not fit into {width} bits"
+                );
+                Self(BitVecValueImpl::new_double_word(value, width))
+            }
+            W::Big => {
+                let mut out = Self::zero(width);
+                out.assign_from_u128(value);
+                out
+            }
+        }
     }
 
     pub fn from_i64(value: i64, width: WidthInt) -> Self {
