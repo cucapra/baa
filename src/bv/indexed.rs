@@ -41,6 +41,18 @@ impl BitVecValueIndex {
     pub fn width(&self) -> WidthInt {
         self.width
     }
+
+    /// Returns whether the value is stored at index zero.
+    #[inline]
+    pub fn is_zero(&self) -> bool {
+        self.index == 0
+    }
+
+    /// Returns whether the value is stored at index one.
+    #[inline]
+    pub fn is_one(&self) -> bool {
+        self.index == 1
+    }
 }
 
 /// Implemented by a value stores to convert indices into value references.
@@ -229,11 +241,11 @@ impl ValueInterner {
     }
 
     pub fn is_zero<I: Borrow<BitVecValueIndex>>(index: I) -> bool {
-        index.borrow().index == 0
+        index.borrow().is_zero()
     }
 
     pub fn is_one<I: Borrow<BitVecValueIndex>>(index: I) -> bool {
-        index.borrow().index == 1
+        index.borrow().is_one()
     }
 
     pub fn get_index<'a>(&mut self, value: impl Into<BitVecValueRef<'a>>) -> BitVecValueIndex {
