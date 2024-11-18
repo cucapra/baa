@@ -197,6 +197,15 @@ pub trait BitVecOps {
         self.words().iter().all(|w| *w == 0)
     }
 
+    fn is_all_ones(&self) -> bool {
+        let lsbs_zero = self
+            .words()
+            .iter()
+            .take(self.words().len() - 1)
+            .all(|w| *w == Word::MAX);
+        lsbs_zero && (*self.words().last().unwrap() == mask(self.width() % Word::BITS))
+    }
+
     fn is_negative(&self) -> bool {
         crate::bv::arithmetic::is_neg(self.words(), self.width())
     }
@@ -581,5 +590,20 @@ mod tests {
         // make sure src_ref was not moved
         let value = src_ref.to_u64().unwrap();
         assert_eq!(value, 1111111111 * 2);
+    }
+
+    #[test]
+    fn test_is_all_ones() {
+        let mut a = BitVecValue::ones(23);
+        assert!(a.is_all_ones());
+        a.clear_bit(20);
+        assert!(!a.is_all_ones());
+
+        let mut a = BitVecValue::ones(1345);
+        assert!(a.is_all_ones());
+        a.clear_bit(1000);
+        assert!(!a.is_all_ones());
+        a.set_bit(1000);
+        assert!(a.is_all_ones());
     }
 }
