@@ -197,13 +197,18 @@ pub trait BitVecOps {
         self.words().iter().all(|w| *w == 0)
     }
 
+    fn is_one(&self) -> bool {
+        let msbs_are_zero = self.words().iter().skip(1).all(|w| *w == 0);
+        msbs_are_zero && self.words()[0] == 1
+    }
+
     fn is_all_ones(&self) -> bool {
-        let lsbs_zero = self
+        let lsbs_are_max = self
             .words()
             .iter()
             .take(self.words().len() - 1)
             .all(|w| *w == Word::MAX);
-        lsbs_zero && (*self.words().last().unwrap() == mask(self.width() % Word::BITS))
+        lsbs_are_max && (*self.words().last().unwrap() == mask(self.width() % Word::BITS))
     }
 
     fn is_negative(&self) -> bool {
@@ -605,5 +610,15 @@ mod tests {
         assert!(!a.is_all_ones());
         a.set_bit(1000);
         assert!(a.is_all_ones());
+    }
+
+    #[test]
+    fn test_is_one() {
+        let mut a = BitVecValue::zero(23);
+        assert!(!a.is_one());
+        a.set_bit(0);
+        assert!(a.is_one());
+        a.set_bit(20);
+        assert!(!a.is_one());
     }
 }
