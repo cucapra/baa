@@ -106,6 +106,7 @@ impl BitVecValue {
                     value,
                     "{value} does not fit into {width} bits"
                 );
+                let value = value & mask(width);
                 Self(BitVecValueImpl::new_word(value, width))
             }
             W::Double => Self(BitVecValueImpl::new_double_word(value as DoubleWord, width)),
@@ -125,7 +126,8 @@ impl BitVecValue {
                     value as Word,
                     "{value} does not fit into {width} bits"
                 );
-                Self(BitVecValueImpl::new_word(value as Word, width))
+                let value = value as Word & mask(width);
+                Self(BitVecValueImpl::new_word(value, width))
             }
             W::Double => {
                 debug_assert_eq!(
@@ -133,6 +135,7 @@ impl BitVecValue {
                     value,
                     "{value} does not fit into {width} bits"
                 );
+                let value = value & mask_double_word(width);
                 Self(BitVecValueImpl::new_double_word(value, width))
             }
             W::Big => {
