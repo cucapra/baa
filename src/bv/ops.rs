@@ -215,6 +215,28 @@ pub trait BitVecOps {
         crate::bv::arithmetic::is_neg(self.words(), self.width())
     }
 
+    fn is_pow_2(&self) -> Option<WidthInt> {
+        // find most significant bit set
+        let mut bit_pos = None;
+        for (word_ii, &word) in self.words().iter().enumerate() {
+            if bit_pos.is_none() {
+                if word != 0 {
+                    // is there only one bit set?
+                    if word.leading_zeros() + word.trailing_zeros() == Word::BITS - 1 {
+                        bit_pos = Some(word.trailing_zeros() + word_ii as WidthInt * Word::BITS);
+                    } else {
+                        // more than one bit set
+                        return None;
+                    }
+                }
+            } else if word != 0 {
+                // more than one bit set
+                return None;
+            }
+        }
+        bit_pos
+    }
+
     declare_arith_bin_fn!(add);
     declare_arith_bin_fn!(sub);
     declare_arith_bin_fn!(shift_left);
@@ -620,5 +642,21 @@ mod tests {
         assert!(a.is_one());
         a.set_bit(20);
         assert!(!a.is_one());
+    }
+
+    #[test]
+    fn test_is_pow_2() {
+        let mut a = BitVecValue::zero(1456);
+        assert_eq!(a.is_pow_2(), None);
+        a.set_bit(0);
+        assert_eq!(a.is_pow_2(), Some(0));
+        a.set_bit(20);
+        assert_eq!(a.is_pow_2(), None);
+
+        for bit in 0..a.width() {
+            a.clear();
+            a.set_bit(bit);
+            assert_eq!(a.is_pow_2(), Some(bit));
+        }
     }
 }
