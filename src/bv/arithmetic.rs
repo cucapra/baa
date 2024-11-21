@@ -435,3 +435,62 @@ pub(crate) fn assert_unused_bits_zero(value: &[Word], width: WidthInt) {
         assert_eq!(unused, 0, "unused msb bits need to be zero!")
     }
 }
+
+pub(crate) fn find_ranges_of_ones(words: &[Word]) -> Vec<std::ops::Range<WidthInt>> {
+    // the actual width does not matter since we assume that all unused bits in the msb are set to zero
+    let mut out = vec![];
+    let mut range_start: Option<WidthInt> = None;
+    for (word_ii, word) in words.iter().enumerate() {
+        let lsb_ii = word_ii as WidthInt * Word::BITS;
+        let mut word = *word;
+        let mut bits_consumed = 0;
+
+        // handle open range from previous word
+        if let Some(start) = range_start {
+            let ones = word.trailing_ones();
+            bits_consumed += ones;
+            word >>= ones;
+            if ones < Word::BITS {
+                range_start = None;
+                out.push(start..lsb_ii + bits_consumed);
+            }
+        }
+
+        // find ranges in this word
+        while bits_consumed < Word::BITS {
+            debug_assert!(range_start.is_none());
+            if word == 0 {
+                // done
+                bits_consumed = Word::BITS;
+            } else {
+                let zeros = word.trailing_zeros();
+                bits_consumed += zeros;
+                word >>= zeros;
+                let start = bits_consumed;
+                let ones = word.trailing_ones();
+                bits_consumed += ones;
+                word = word.overflowing_shr(ones).0;
+                match bits_consumed.cmp(&Word::BITS) {
+                    Ordering::Less => {
+                        let end = bits_consumed;
+                        out.push(lsb_ii + start..lsb_ii + end);
+                    }
+                    Ordering::Equal => {
+                        // done, range might expand to next word
+                        range_start = Some(start + lsb_ii);
+                    }
+                    Ordering::Greater => {
+                        unreachable!("")
+                    }
+                }
+            }
+        }
+    }
+    // finish open range
+    if let Some(start) = range_start {
+        let end = words.len() as WidthInt * Word::BITS;
+        out.push(start..end);
+    }
+
+    out
+}

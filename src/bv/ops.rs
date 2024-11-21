@@ -237,6 +237,19 @@ pub trait BitVecOps {
         bit_pos
     }
 
+    /// Computes all ranges for which the bits are one.
+    fn bit_set_intervals(&self) -> Vec<std::ops::Range<WidthInt>> {
+        match self.width() {
+            0 => vec![],
+            1 if self.is_zero() => vec![],
+            1 => {
+                let range = 0..1;
+                vec![range]
+            }
+            _ => crate::bv::arithmetic::find_ranges_of_ones(self.words()),
+        }
+    }
+
     declare_arith_bin_fn!(add);
     declare_arith_bin_fn!(sub);
     declare_arith_bin_fn!(shift_left);
@@ -658,5 +671,29 @@ mod tests {
             a.set_bit(bit);
             assert_eq!(a.is_pow_2(), Some(bit));
         }
+    }
+
+    #[test]
+    fn test_bit_set_intervals() {
+        let a = BitVecValue::zero(1456);
+        assert_eq!(a.bit_set_intervals(), []);
+        let a = BitVecValue::from_u64(Word::MAX, Word::BITS);
+        assert_eq!(a.bit_set_intervals(), [0..Word::BITS]);
+        let mut a = BitVecValue::from_u64((1 as Word) << (Word::BITS - 1), 127);
+        assert_eq!(a.bit_set_intervals(), [(Word::BITS - 1)..Word::BITS]);
+        a.set_bit(Word::BITS);
+        assert_eq!(a.bit_set_intervals(), [(Word::BITS - 1)..(Word::BITS + 1)]);
+        a.clear_bit(Word::BITS - 1);
+        assert_eq!(a.bit_set_intervals(), [Word::BITS..(Word::BITS + 1)]);
+        a.set_bit(13);
+        assert_eq!(
+            a.bit_set_intervals(),
+            [13..14, Word::BITS..(Word::BITS + 1)]
+        );
+        a.set_bit(14);
+        assert_eq!(
+            a.bit_set_intervals(),
+            [13..15, Word::BITS..(Word::BITS + 1)]
+        );
     }
 }
