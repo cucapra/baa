@@ -290,10 +290,10 @@ impl DenseArrayValue {
 
         let elements = 1usize << index_width;
         let data = if data_width == 1 {
-            if default.is_tru() {
+            if default.is_true() {
                 DenseArrayImpl::Bit(BitVecValue::ones(elements as WidthInt))
             } else {
-                debug_assert!(default.is_fals());
+                debug_assert!(default.is_false());
                 DenseArrayImpl::Bit(BitVecValue::zero(elements as WidthInt))
             }
         } else if data_width <= u8::BITS {
@@ -388,7 +388,7 @@ impl ArrayMutOps for DenseArrayValue {
         let words_per_element = self.words_per_element();
         match &mut self.data {
             DenseArrayImpl::Bit(value) => {
-                if data.is_tru() {
+                if data.is_true() {
                     value.set_bit(index as WidthInt);
                 } else {
                     value.clear_bit(index as WidthInt);
