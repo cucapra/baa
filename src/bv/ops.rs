@@ -193,6 +193,15 @@ pub trait BitVecOps {
         self.width() == 1 && self.words()[0] == 0
     }
 
+    #[deprecated(since = "0.15.0", note = "please use `is_true` instead")]
+    fn is_tru(&self) -> bool {
+        self.is_true()
+    }
+    #[deprecated(since = "0.15.0", note = "please use `is_false` instead")]
+    fn is_fals(&self) -> bool {
+        self.is_false()
+    }
+
     fn is_zero(&self) -> bool {
         self.words().iter().all(|w| *w == 0)
     }
