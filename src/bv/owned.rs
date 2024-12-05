@@ -66,6 +66,7 @@ pub(crate) enum W {
 
 const MIN_DOUBLE_BITS: u32 = Word::BITS + 1;
 impl From<WidthInt> for W {
+    #[inline]
     fn from(value: WidthInt) -> Self {
         match value {
             0 => panic!("zero bit is not supported!"),
@@ -240,6 +241,7 @@ impl From<bool> for BitVecValue {
 }
 
 impl<'a> From<BitVecValueRef<'a>> for BitVecValue {
+    #[inline]
     fn from(value: BitVecValueRef<'a>) -> Self {
         Self(match value.0 {
             BitVecValueRefImpl::Word(width, value) => BitVecValueImpl::Word(width, value),
