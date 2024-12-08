@@ -396,8 +396,8 @@ mod tests {
     fn test_to_bit_str_with_extra_words() {
         let value = BitVecValue::zero(7);
         let input = value.words();
-        assert_eq!(to_bit_str(&input, 7), "0000000");
-        assert_eq!(to_bit_str(&input, 33), "0".repeat(33));
+        assert_eq!(to_bit_str(input, 7), "0000000");
+        assert_eq!(to_bit_str(input, 33), "0".repeat(33));
     }
 
     #[test]
@@ -410,27 +410,27 @@ mod tests {
     fn test_to_hex_str() {
         let mut value = BitVecValue::zero(64);
         let input = value.words_mut();
-        assert_eq!(to_hex_str(&input, 7), "00");
-        assert_eq!(to_hex_str(&input, 33), "0".repeat(9));
+        assert_eq!(to_hex_str(input, 7), "00");
+        assert_eq!(to_hex_str(input, 33), "0".repeat(9));
         input[0] = 0xa4aa78;
-        assert_eq!(to_hex_str(&input, 6 * 4), "a4aa78");
+        assert_eq!(to_hex_str(input, 6 * 4), "a4aa78");
         let mut value = BitVecValue::zero(128);
         let input = value.words_mut();
         input[0] = 0xaaaaaaaaaaaaaaaa;
-        assert_eq!(to_hex_str(&input, 7 + Word::BITS), "00aaaaaaaaaaaaaaaa");
+        assert_eq!(to_hex_str(input, 7 + Word::BITS), "00aaaaaaaaaaaaaaaa");
         assert_eq!(
-            to_hex_str(&input, 33 + Word::BITS),
+            to_hex_str(input, 33 + Word::BITS),
             format!("{}aaaaaaaaaaaaaaaa", "0".repeat(9))
         );
         input[1] = 0xa4aa78;
         assert_eq!(
-            to_hex_str(&input, 6 * 4 + Word::BITS),
+            to_hex_str(input, 6 * 4 + Word::BITS),
             "a4aa78aaaaaaaaaaaaaaaa"
         );
         // regressions test
         let mut value = BitVecValue::zero(64);
         let input = value.words_mut();
         input[0] = 768603298337958570;
-        assert_eq!(to_hex_str(&input, 64), "0aaaa0a0aaa0aaaa");
+        assert_eq!(to_hex_str(input, 64), "0aaaa0a0aaa0aaaa");
     }
 }

@@ -185,12 +185,21 @@ pub trait BitVecOps {
         }
     }
 
-    fn is_tru(&self) -> bool {
+    fn is_true(&self) -> bool {
         self.width() == 1 && self.words()[0] == 1
     }
 
-    fn is_fals(&self) -> bool {
+    fn is_false(&self) -> bool {
         self.width() == 1 && self.words()[0] == 0
+    }
+
+    #[deprecated(since = "0.15.0", note = "please use `is_true` instead")]
+    fn is_tru(&self) -> bool {
+        self.is_true()
+    }
+    #[deprecated(since = "0.15.0", note = "please use `is_false` instead")]
+    fn is_fals(&self) -> bool {
+        self.is_false()
     }
 
     fn is_zero(&self) -> bool {
