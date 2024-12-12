@@ -13,5 +13,6 @@ mod owned;
 pub use arithmetic::mask;
 pub use borrowed::{BitVecValueMutRef, BitVecValueRef};
 pub use indexed::{BitVecValueIndex, IndexToMutRef, IndexToRef, ValueInterner};
+pub use io::ParseIntError;
 pub use ops::{BitVecMutOps, BitVecOps};
 pub use owned::BitVecValue;

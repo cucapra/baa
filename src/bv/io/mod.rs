@@ -7,3 +7,5 @@
 pub(crate) mod bigint;
 pub(crate) mod bytes;
 pub(crate) mod strings;
+
+pub use strings::ParseIntError;
