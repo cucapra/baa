@@ -256,10 +256,7 @@ pub(crate) fn shift_right(
     clear(dst);
 
     // check to see if we are shifting for more than our width
-    let shift_amount = match get_shift_amount(b, width) {
-        None => return None,
-        Some(value) => value,
-    };
+    let shift_amount = get_shift_amount(b, width)?;
 
     // otherwise we actually perform the shift by converting it to a slice
     let hi = width - 1;
