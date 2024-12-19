@@ -77,8 +77,8 @@ impl From<WidthInt> for W {
     }
 }
 
-const FALS_VALUE: BitVecValueImpl = BitVecValueImpl::new_word(0, 1);
-const TRU_VALUE: BitVecValueImpl = BitVecValueImpl::new_word(1, 1);
+const FALSE_VALUE: BitVecValueImpl = BitVecValueImpl::new_word(0, 1);
+const TRUE_VALUE: BitVecValueImpl = BitVecValueImpl::new_word(1, 1);
 
 impl BitVecValue {
     /// Parse a string of 1s and 0s. The width of the resulting value is the number of digits.
@@ -155,9 +155,9 @@ impl BitVecValue {
 
     pub fn from_bool(value: bool) -> Self {
         if value {
-            Self::tru()
+            Self::new_true()
         } else {
-            Self::fals()
+            Self::new_false()
         }
     }
 
@@ -200,11 +200,21 @@ impl BitVecValue {
     }
 
     #[inline]
-    pub fn tru() -> Self {
-        Self(TRU_VALUE.clone())
+    pub fn new_true() -> Self {
+        Self(TRUE_VALUE.clone())
     }
+    #[inline]
+    pub fn new_false() -> Self {
+        Self(FALSE_VALUE.clone())
+    }
+
+    #[deprecated(since = "0.15.0", note = "please use `new_true` instead")]
+    pub fn tru() -> Self {
+        Self::new_true()
+    }
+    #[deprecated(since = "0.15.0", note = "please use `new_false` instead")]
     pub fn fals() -> Self {
-        Self(FALS_VALUE.clone())
+        Self::new_false()
     }
 
     #[cfg(feature = "bigint")]
@@ -334,9 +344,9 @@ mod tests {
     }
 
     #[test]
-    fn test_tru_fals() {
-        assert!(BitVecValue::tru().to_bool().unwrap());
-        assert!(!BitVecValue::fals().to_bool().unwrap());
+    fn test_true_false() {
+        assert!(BitVecValue::new_true().to_bool().unwrap());
+        assert!(!BitVecValue::new_false().to_bool().unwrap());
     }
 
     #[test]

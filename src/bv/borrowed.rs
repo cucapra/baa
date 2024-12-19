@@ -94,7 +94,7 @@ impl BitVecOps for BitVecValueRef<'_> {
         match &self.0 {
             BitVecValueRefImpl::Word(_, value) => std::slice::from_ref(value),
             BitVecValueRefImpl::Double(_, value) => value.as_slice(),
-            BitVecValueRefImpl::Big(_, value) => value.as_ref(),
+            BitVecValueRefImpl::Big(_, value) => value,
         }
     }
 }
@@ -130,7 +130,7 @@ mod tests {
     use std::hash::{DefaultHasher, Hash, Hasher};
 
     /// Signature is copied from HashTable::get
-    fn get_hash<Q: ?Sized>(key: &Q) -> u64
+    fn get_hash<Q>(key: &Q) -> u64
     where
         BitVecValue: Borrow<Q>,
         Q: Hash + Eq,

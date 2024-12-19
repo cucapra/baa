@@ -330,8 +330,8 @@ mod tests {
     #[test]
     fn test_interner() {
         let mut i = ValueInterner::new();
-        assert_eq!(i.get_index(&BitVecValue::tru()).index, 1);
-        assert_eq!(i.get_index(&BitVecValue::fals()).index, 0);
+        assert_eq!(i.get_index(&BitVecValue::new_true()).index, 1);
+        assert_eq!(i.get_index(&BitVecValue::new_false()).index, 0);
         assert_eq!(i.get_index(&BitVecValue::from_u64(0, 4)).index, 0);
         assert!(ValueInterner::is_zero(
             i.get_index(&BitVecValue::from_u64(0, 4))
