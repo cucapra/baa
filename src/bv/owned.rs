@@ -208,15 +208,6 @@ impl BitVecValue {
         Self(FALSE_VALUE.clone())
     }
 
-    #[deprecated(since = "0.15.0", note = "please use `new_true` instead")]
-    pub fn tru() -> Self {
-        Self::new_true()
-    }
-    #[deprecated(since = "0.15.0", note = "please use `new_false` instead")]
-    pub fn fals() -> Self {
-        Self::new_false()
-    }
-
     #[cfg(feature = "bigint")]
     pub fn from_big_int(value: &num_bigint::BigInt, bits: WidthInt) -> Self {
         let mut out = Self::zero(bits);
