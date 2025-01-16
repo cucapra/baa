@@ -7,6 +7,7 @@ use crate::array::ops::{ArrayMutOps, ArrayOps};
 use crate::{
     BitVecMutOps, BitVecOps, BitVecValue, BitVecValueMutRef, BitVecValueRef, WidthInt, Word,
 };
+use rand::distributions::Uniform;
 #[cfg(feature = "rand1")]
 use rand::Rng;
 use std::collections::HashMap;
@@ -338,18 +339,18 @@ impl DenseArrayValue {
         let data = if data_width == 1 {
             DenseArrayImpl::Bit(BitVecValue::random(rng, elements as WidthInt))
         } else if data_width <= u8::BITS {
-            let range = 0..(u8::MAX >> (u8::BITS - data_width));
+            let range = Uniform::from(0..(u8::MAX >> (u8::BITS - data_width)));
             DenseArrayImpl::U8(rng.sample_iter(&range).take(elements).collect())
         } else if data_width <= u64::BITS {
-            let range = 0..(u64::MAX >> (u64::BITS - data_width));
+            let range = Uniform::from(0..(u64::MAX >> (u64::BITS - data_width)));
             DenseArrayImpl::U64(rng.sample_iter(&range).take(elements).collect())
         } else {
-            let words_per_element = data_width.div_ceil(Word::BITS);
-            let mut v = vec![elements * words_per_element];
+            let words_per_element = data_width.div_ceil(Word::BITS) as usize;
+            let mut v = vec![0 as Word; elements * words_per_element];
             for ii in 0..elements {
                 let offset = ii * words_per_element;
-                let mut value: BitVecValueMutRef =
-                    (&mut v[offset..offset + words_per_element]).into();
+                let mut value =
+                    BitVecValueMutRef::new(data_width, &mut v[offset..offset + words_per_element]);
                 value.randomize(rng);
             }
             DenseArrayImpl::Big(v)

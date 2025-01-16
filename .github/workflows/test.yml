@@ -22,7 +22,8 @@ jobs:
           - bigint
           - serde1
           - fraction1
-          - bigint,serde1,fraction1
+          - rand1
+          - bigint,serde1,fraction1,rand1
 
     steps:
     - name: Update Rust to ${{ matrix.toolchain }}
