@@ -221,6 +221,13 @@ impl BitVecValue {
         crate::bv::io::bigint::from_big_uint(value, bits, out.words_mut());
         out
     }
+
+    #[cfg(feature = "rand1")]
+    pub fn random(rng: &mut impl rand::Rng, bits: WidthInt) -> Self {
+        let mut out = Self::zero(bits);
+        out.randomize(rng);
+        out
+    }
 }
 
 impl<O: BitVecOps> PartialEq<O> for BitVecValue {

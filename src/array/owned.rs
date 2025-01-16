@@ -7,6 +7,8 @@ use crate::array::ops::{ArrayMutOps, ArrayOps};
 use crate::{
     BitVecMutOps, BitVecOps, BitVecValue, BitVecValueMutRef, BitVecValueRef, WidthInt, Word,
 };
+#[cfg(feature = "rand1")]
+use rand::Rng;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
@@ -74,6 +76,14 @@ impl ArrayValue {
             (ArrayImpl::Sparse(a), ArrayImpl::Sparse(b)) => a.is_equal(b),
             (ArrayImpl::Sparse(a), ArrayImpl::Dense(b)) => is_equal_mixed(b, a),
             (ArrayImpl::Dense(a), ArrayImpl::Sparse(b)) => is_equal_mixed(a, b),
+        }
+    }
+
+    #[cfg(feature = "rand1")]
+    pub fn random(rng: &mut impl rand::Rng, index_width: WidthInt, data_width: WidthInt) -> Self {
+        let dense = DenseArrayValue::random(rng, index_width, data_width);
+        Self {
+            data: ArrayImpl::Dense(dense),
         }
     }
 }
@@ -306,6 +316,41 @@ impl DenseArrayValue {
             let mut v = Vec::with_capacity(elements * default.words().len());
             for _ in 0..elements {
                 v.extend_from_slice(default.words());
+            }
+            DenseArrayImpl::Big(v)
+        };
+        Self {
+            index_width,
+            data_width,
+            data,
+        }
+    }
+
+    #[cfg(feature = "rand1")]
+    pub fn random(rng: &mut impl rand::Rng, index_width: WidthInt, data_width: WidthInt) -> Self {
+        let storage_size = approx_dense_storage_size(index_width, data_width);
+        debug_assert!(
+            storage_size <= DENSE_ARRAY_MAX_BYTES,
+            "array would take up too much space: {storage_size} bytes"
+        );
+
+        let elements = 1usize << index_width;
+        let data = if data_width == 1 {
+            DenseArrayImpl::Bit(BitVecValue::random(rng, elements as WidthInt))
+        } else if data_width <= u8::BITS {
+            let range = 0..(u8::MAX >> (u8::BITS - data_width));
+            DenseArrayImpl::U8(rng.sample_iter(&range).take(elements).collect())
+        } else if data_width <= u64::BITS {
+            let range = 0..(u64::MAX >> (u64::BITS - data_width));
+            DenseArrayImpl::U64(rng.sample_iter(&range).take(elements).collect())
+        } else {
+            let words_per_element = data_width.div_ceil(Word::BITS);
+            let mut v = vec![elements * words_per_element];
+            for ii in 0..elements {
+                let offset = ii * words_per_element;
+                let mut value: BitVecValueMutRef =
+                    (&mut v[offset..offset + words_per_element]).into();
+                value.randomize(rng);
             }
             DenseArrayImpl::Big(v)
         };

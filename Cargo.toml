@@ -1,6 +1,6 @@
 [package]
 name = "baa"
-version = "0.16.2"
+version = "0.16.3"
 edition = "2021"
 authors = ["Kevin Laeufer <laeufer@cornell.edu>"]
 description = "BitVector and Array Arithmetic"
@@ -16,6 +16,7 @@ rust-version = "1.73.0"
 # optional dependencies for crate interop
 fraction = { version = "0.15", optional = true }
 num-bigint = { version = "0.4", optional = true }
+rand = { version = "0.8.5", optional = true, features = ["small_rng"] }
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 
@@ -28,3 +29,4 @@ default = []
 bigint = ["dep:num-bigint"]
 serde1 = ["dep:serde"]
 fraction1 = ["dep:fraction"]
+rand1 = ["dep:rand"]
