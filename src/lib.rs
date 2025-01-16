@@ -49,5 +49,11 @@ impl TryFrom<Value> for u64 {
     }
 }
 
+impl Value {
+    pub fn try_into_u64(self) -> Result<u64, ()> {
+        <Self as TryInto<u64>>::try_into(self)
+    }
+}
+
 pub use array::*;
 pub use bv::*;
