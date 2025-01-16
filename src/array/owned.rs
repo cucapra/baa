@@ -7,6 +7,7 @@ use crate::array::ops::{ArrayMutOps, ArrayOps};
 use crate::{
     BitVecMutOps, BitVecOps, BitVecValue, BitVecValueMutRef, BitVecValueRef, WidthInt, Word,
 };
+#[cfg(feature = "rand1")]
 use rand::distributions::Uniform;
 #[cfg(feature = "rand1")]
 use rand::Rng;
