@@ -41,3 +41,11 @@ proptest! {
         prop_assert_eq!(val.to_big_int(), input.into())
     }
 }
+
+#[test]
+fn test_value_container_to_u64() {
+    let value = Value::BitVec(BitVecValue::from_u128(123, 128));
+    assert_eq!(value.try_into(), Ok(123));
+    let value = Value::BitVec(BitVecValue::from_u128(u128::MAX >> 10, 128));
+    assert!(<Value as TryInto<u64>>::try_into(value).is_err());
+}

@@ -40,5 +40,14 @@ impl TryFrom<Value> for BitVecValue {
     }
 }
 
+impl TryFrom<Value> for u64 {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        let value: BitVecValue = value.try_into()?;
+        value.to_u64().ok_or(())
+    }
+}
+
 pub use array::*;
 pub use bv::*;
