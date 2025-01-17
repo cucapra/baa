@@ -258,17 +258,7 @@ pub(crate) fn from_str_radix(
         }
         [lsb, msb] => {
             debug_assert!(width <= 128);
-            let out = match u128::from_str_radix(value, radix) {
-                Ok(v) => v,
-                Err(e) => {
-                    let kind = match e.kind() {
-                        std::num::IntErrorKind::NegOverflow
-                        | std::num::IntErrorKind::PosOverflow => IntErrorKind::ExceedsWidth,
-                        _ => IntErrorKind::InvalidDigit,
-                    };
-                    return Err(ParseIntError { kind });
-                }
-            };
+            let out = parse_u128(value, radix)?;
             *lsb = out as Word;
             *msb = (out >> Word::BITS) as Word;
         }
@@ -292,7 +282,7 @@ pub(crate) fn from_str_radix(
 
             match radix {
                 2 => parse_base_2(digits, out, width)?,
-                10 => parse_base_10(digits, out, width)?,
+                10 => parse_base_10(digits, out)?,
                 16 => parse_base_16(digits, out)?,
                 _ => todo!("Implement support for base {radix}. Currently the following bases are available: 2, 10, 16"),
             };
@@ -313,6 +303,21 @@ pub(crate) fn from_str_radix(
         negate_in_place(out, width)
     }
     Ok(())
+}
+
+fn parse_u128(value: &str, radix: u32) -> Result<u128, ParseIntError> {
+    match u128::from_str_radix(value, radix) {
+        Ok(v) => Ok(v),
+        Err(e) => {
+            let kind = match e.kind() {
+                std::num::IntErrorKind::NegOverflow | std::num::IntErrorKind::PosOverflow => {
+                    IntErrorKind::ExceedsWidth
+                }
+                _ => IntErrorKind::InvalidDigit,
+            };
+            Err(ParseIntError { kind })
+        }
+    }
 }
 
 fn parse_base_16(digits: &[u8], out: &mut [Word]) -> Result<WidthInt, ParseIntError> {
@@ -337,13 +342,22 @@ fn parse_base_16(digits: &[u8], out: &mut [Word]) -> Result<WidthInt, ParseIntEr
     Ok(num_digits as u32 * BITS_PER_HEX_DIGIT)
 }
 
-fn parse_base_10(
-    _digits: &[u8],
-    _out: &mut [Word],
-    _max_width: WidthInt,
-) -> Result<WidthInt, ParseIntError> {
-    // let other = BitVecValue::
-    todo!()
+// format!("{}", u128::MAX).len() = 39
+const MAX_U128_DEC_DIGITS: usize = 39 - 1;
+
+fn parse_base_10(digits: &[u8], out: &mut [Word]) -> Result<WidthInt, ParseIntError> {
+    if digits.len() <= MAX_U128_DEC_DIGITS {
+        let value = parse_u128(std::str::from_utf8(digits).unwrap(), 10)?;
+        out[0] = value as Word;
+        out[1] = (value >> Word::BITS) as Word;
+        for o in out.iter_mut().skip(2) {
+            *o = 0;
+        }
+    } else {
+        todo!()
+    }
+    // calculate the number of bits
+    Ok(crate::bv::arithmetic::min_width(out))
 }
 
 fn parse_base_2(

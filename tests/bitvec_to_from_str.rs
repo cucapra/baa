@@ -79,6 +79,13 @@ fn test_to_from_dec_str_regression() {
     do_test_to_from_decimal_str("1000000");
 }
 
+#[test]
+fn test_to_from_dec_str() {
+    let dec_str = "34";
+    let value = BitVecValue::from_str_radix(dec_str, 10, 512).unwrap();
+    assert_eq!(value.to_u64().unwrap(), 34);
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(10000))]
 

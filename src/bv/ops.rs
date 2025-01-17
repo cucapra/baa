@@ -218,25 +218,13 @@ pub trait BitVecOps {
     }
 
     fn is_pow_2(&self) -> Option<WidthInt> {
-        // find most significant bit set
-        let mut bit_pos = None;
-        for (word_ii, &word) in self.words().iter().enumerate() {
-            if bit_pos.is_none() {
-                if word != 0 {
-                    // is there only one bit set?
-                    if word.leading_zeros() + word.trailing_zeros() == Word::BITS - 1 {
-                        bit_pos = Some(word.trailing_zeros() + word_ii as WidthInt * Word::BITS);
-                    } else {
-                        // more than one bit set
-                        return None;
-                    }
-                }
-            } else if word != 0 {
-                // more than one bit set
-                return None;
-            }
-        }
-        bit_pos
+        crate::bv::arithmetic::is_pow2(self.words())
+    }
+
+    /// Computes the minimum number of bits that are necessary to represent the current value.
+    /// This corresponds to the position of the most significant `1` plus one.
+    fn min_width(&self) -> WidthInt {
+        crate::bv::arithmetic::min_width(self.words())
     }
 
     /// Computes all ranges for which the bits are one.

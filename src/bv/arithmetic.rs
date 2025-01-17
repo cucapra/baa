@@ -379,6 +379,43 @@ pub(crate) fn is_neg(src: &[Word], width: WidthInt) -> bool {
 }
 
 #[inline]
+pub(crate) fn is_pow2(words: &[Word]) -> Option<WidthInt> {
+    // find most significant bit set
+    let mut bit_pos = None;
+    for (word_ii, &word) in words.iter().enumerate() {
+        if bit_pos.is_none() {
+            if word != 0 {
+                // is there only one bit set?
+                if word.leading_zeros() + word.trailing_zeros() == Word::BITS - 1 {
+                    bit_pos = Some(word.trailing_zeros() + word_ii as WidthInt * Word::BITS);
+                } else {
+                    // more than one bit set
+                    return None;
+                }
+            }
+        } else if word != 0 {
+            // more than one bit set
+            return None;
+        }
+    }
+    bit_pos
+}
+
+#[inline]
+pub(crate) fn min_width(words: &[Word]) -> WidthInt {
+    // find most significant bit set
+    for (word_ii, &word) in words.iter().enumerate() {
+        if word != 0 {
+            // cannot underflow since word.leading_zeros() is always less than Word::BITS
+            let bit_pos = Word::BITS - word.leading_zeros() - 1;
+            return word_ii as WidthInt * Word::BITS + bit_pos + 1;
+        }
+    }
+    // all words are zero
+    0
+}
+
+#[inline]
 pub(crate) fn cmp_greater_signed(a: &[Word], b: &[Word], width: WidthInt) -> bool {
     let (is_neg_a, is_neg_b) = (is_neg(a, width), is_neg(b, width));
     match (is_neg_a, is_neg_b) {
