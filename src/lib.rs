@@ -49,6 +49,18 @@ impl TryFrom<Value> for u64 {
     }
 }
 
+impl From<BitVecValue> for Value {
+    fn from(value: BitVecValue) -> Self {
+        Self::BitVec(value)
+    }
+}
+
+impl From<ArrayValue> for Value {
+    fn from(value: ArrayValue) -> Self {
+        Self::Array(value)
+    }
+}
+
 impl Value {
     pub fn try_into_u64(self) -> Result<u64, ()> {
         <Self as TryInto<u64>>::try_into(self)
