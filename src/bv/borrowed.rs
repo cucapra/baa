@@ -20,7 +20,7 @@ pub(super) enum BitVecValueRefImpl<'a> {
 }
 
 impl<'a> BitVecValueRef<'a> {
-    pub(crate) fn new(words: &'a [Word], width: WidthInt) -> Self {
+    pub fn new(words: &'a [Word], width: WidthInt) -> Self {
         debug_assert_eq!(width.div_ceil(Word::BITS) as usize, words.len());
         match words {
             [] => panic!("0-bit not allowed!"),
@@ -65,7 +65,7 @@ pub struct BitVecValueMutRef<'a> {
 }
 
 impl<'a> BitVecValueMutRef<'a> {
-    pub(crate) fn new(width: WidthInt, words: &'a mut [Word]) -> Self {
+    pub fn new(width: WidthInt, words: &'a mut [Word]) -> Self {
         Self { width, words }
     }
 }
