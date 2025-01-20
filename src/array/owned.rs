@@ -123,6 +123,15 @@ impl From<ArrayValue> for SparseArrayValue {
     }
 }
 
+impl From<&ArrayValue> for SparseArrayValue {
+    fn from(value: &ArrayValue) -> Self {
+        match &value.data {
+            ArrayImpl::Sparse(s) => s.clone(),
+            ArrayImpl::Dense(d) => d.into(),
+        }
+    }
+}
+
 impl PartialEq<ArrayValue> for ArrayValue {
     fn eq(&self, other: &ArrayValue) -> bool {
         self.is_equal(other).unwrap_or_default()
