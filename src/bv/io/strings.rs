@@ -372,10 +372,6 @@ fn parse_base_10_to_u64(digits: &[u8]) -> Result<u64, ParseIntError> {
 }
 
 fn parse_base_10(mut digits: &[u8], out: &mut [Word]) -> Result<WidthInt, ParseIntError> {
-    debug_assert!(
-        digits.len() > MAX_U64_DEC_DIGITS,
-        "this function is only for large numbers!"
-    );
     // zero out output
     crate::bv::arithmetic::clear(out);
 
