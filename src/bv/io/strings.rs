@@ -320,6 +320,21 @@ fn parse_u128(value: &str, radix: u32) -> Result<u128, ParseIntError> {
     }
 }
 
+fn parse_u64(value: &str, radix: u32) -> Result<u64, ParseIntError> {
+    match u64::from_str_radix(value, radix) {
+        Ok(v) => Ok(v),
+        Err(e) => {
+            let kind = match e.kind() {
+                std::num::IntErrorKind::NegOverflow | std::num::IntErrorKind::PosOverflow => {
+                    IntErrorKind::ExceedsWidth
+                }
+                _ => IntErrorKind::InvalidDigit,
+            };
+            Err(ParseIntError { kind })
+        }
+    }
+}
+
 fn parse_base_16(digits: &[u8], out: &mut [Word]) -> Result<WidthInt, ParseIntError> {
     let num_digits = digits.len();
     let words = (num_digits as u32 * BITS_PER_HEX_DIGIT).div_ceil(Word::BITS);
@@ -343,19 +358,50 @@ fn parse_base_16(digits: &[u8], out: &mut [Word]) -> Result<WidthInt, ParseIntEr
 }
 
 // format!("{}", u128::MAX).len() = 39
+#[allow(dead_code)]
 const MAX_U128_DEC_DIGITS: usize = 39 - 1;
 
-fn parse_base_10(digits: &[u8], out: &mut [Word]) -> Result<WidthInt, ParseIntError> {
-    if digits.len() <= MAX_U128_DEC_DIGITS {
-        let value = parse_u128(std::str::from_utf8(digits).unwrap(), 10)?;
-        out[0] = value as Word;
-        out[1] = (value >> Word::BITS) as Word;
-        for o in out.iter_mut().skip(2) {
-            *o = 0;
-        }
+// format!("{}", u64::MAX).len() = 20
+const MAX_U64_DEC_DIGITS: usize = 20 - 1;
+
+const U64_FACTOR: u64 = 10u64.pow(MAX_U64_DEC_DIGITS as u32);
+
+fn parse_base_10_to_u64(digits: &[u8]) -> Result<u64, ParseIntError> {
+    debug_assert!(digits.len() <= MAX_U64_DEC_DIGITS);
+    parse_u64(std::str::from_utf8(digits).unwrap(), 10)
+}
+
+fn parse_base_10(mut digits: &[u8], out: &mut [Word]) -> Result<WidthInt, ParseIntError> {
+    debug_assert!(
+        digits.len() > MAX_U64_DEC_DIGITS,
+        "this function is only for large numbers!"
+    );
+    // zero out output
+    crate::bv::arithmetic::clear(out);
+
+    // we consume digits from left to right in multiples of MAX_U64_DEC_DIGITS
+    // 1. leading digits
+    let leading_digits = if digits.len() % MAX_U64_DEC_DIGITS == 0 {
+        MAX_U64_DEC_DIGITS
     } else {
-        todo!()
+        digits.len() % MAX_U64_DEC_DIGITS
+    };
+    let (word_digits, remain) = digits.split_at(leading_digits);
+    out[0] = parse_base_10_to_u64(word_digits)?;
+    digits = remain;
+
+    // 2. now the digits are a multiple of `MAX_U64_DEC_DIGITS`
+    debug_assert_eq!(digits.len() % MAX_U64_DEC_DIGITS, 0);
+
+    while !digits.is_empty() {
+        let (word_digits, remain) = digits.split_at(MAX_U64_DEC_DIGITS);
+        digits = remain;
+        let word = parse_base_10_to_u64(word_digits)?;
+        // multiply existing number
+        crate::bv::arithmetic::mul_word(out, U64_FACTOR);
+        crate::bv::arithmetic::add_word(out, word);
     }
+
     // calculate the number of bits
     Ok(crate::bv::arithmetic::min_width(out))
 }
@@ -446,5 +492,11 @@ mod tests {
         let input = value.words_mut();
         input[0] = 768603298337958570;
         assert_eq!(to_hex_str(input, 64), "0aaaa0a0aaa0aaaa");
+    }
+
+    #[test]
+    fn test_digit_counts() {
+        assert_eq!(MAX_U128_DEC_DIGITS, format!("{}", u128::MAX).len() - 1);
+        assert_eq!(MAX_U64_DEC_DIGITS, format!("{}", u64::MAX).len() - 1);
     }
 }

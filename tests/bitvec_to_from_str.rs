@@ -90,7 +90,14 @@ fn test_to_from_dec_str_small_value() {
 #[test]
 fn test_to_from_dec_str_large_value() {
     let dec_str = "596886253802847701482483271715688189726967057213902170277048855852747875443594200622744233395250662615839263196891363475349438107920290669854978619157637";
+
+    // converted using python, added a single leading zero for padding
+    let eq_hex_str = "0b6584ec8ec7ccc11f45b8bb2fc98439f9e09d3d4bae2461b212c796d027d334a9defeda2bc5328aeeff4b5210d9e9dd25afe7d1b05660d2f22d22c7fce72c85";
+    assert_eq!(eq_hex_str.len() * 4, 512);
+
+    // test parse function
     let value = BitVecValue::from_str_radix(dec_str, 10, 512).unwrap();
+    assert_eq!(value.to_hex_str(), eq_hex_str);
 }
 
 proptest! {

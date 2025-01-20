@@ -245,6 +245,28 @@ pub(crate) fn mul(dst: &mut [Word], a: &[Word], b: &[Word], width: WidthInt) {
     }
 }
 
+/// Multiplies `dst` with the word `value`. Does not mask the MSB since this is an internal subroutine.
+#[inline]
+pub(crate) fn mul_word(dst: &mut [Word], value: Word) {
+    let mut carry = 0;
+    for w in dst.iter_mut() {
+        let res = *w as DoubleWord * value as DoubleWord + carry as DoubleWord;
+        carry = (res >> Word::BITS) as Word;
+        *w = (res & Word::MAX as DoubleWord) as Word;
+    }
+}
+
+/// Adds `value` to  `dst`. Does not mask the MSB since this is an internal subroutine.
+#[inline]
+pub(crate) fn add_word(dst: &mut [Word], value: Word) {
+    let mut carry = 0;
+    for (ii, w) in dst.iter_mut().enumerate() {
+        let aa = *w;
+        let bb = if ii == 0 { value } else { 0 };
+        carry = adc(w, carry, aa, bb);
+    }
+}
+
 #[inline]
 pub(crate) fn shift_right(
     dst: &mut [Word],
