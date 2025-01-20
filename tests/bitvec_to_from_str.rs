@@ -80,10 +80,17 @@ fn test_to_from_dec_str_regression() {
 }
 
 #[test]
-fn test_to_from_dec_str() {
+fn test_to_from_dec_str_small_value() {
     let dec_str = "34";
     let value = BitVecValue::from_str_radix(dec_str, 10, 512).unwrap();
     assert_eq!(value.to_u64().unwrap(), 34);
+    assert_eq!(value.to_dec_str(), dec_str);
+}
+
+#[test]
+fn test_to_from_dec_str_large_value() {
+    let dec_str = "596886253802847701482483271715688189726967057213902170277048855852747875443594200622744233395250662615839263196891363475349438107920290669854978619157637";
+    let value = BitVecValue::from_str_radix(dec_str, 10, 512).unwrap();
 }
 
 proptest! {
