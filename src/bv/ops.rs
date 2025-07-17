@@ -465,9 +465,101 @@ pub trait BitVecOps {
     }
 }
 
+/// Declares an arithmetic function which takes in two equal size bitvector and modifies
+/// a bitvector of same width in place.
+macro_rules! declare_in_place_arith_bin_fn {
+    ($name:ident) => {
+        paste::paste! {
+            fn [<$name _in_place>](&mut self, lhs: &impl BitVecOps, rhs: &impl BitVecOps) {
+                let width = self.width();
+                debug_assert_eq!(width, lhs.width());
+                debug_assert_eq!(lhs.width(), rhs.width());
+                crate::bv::arithmetic::$name(self.words_mut(), lhs.words(), rhs.words(), width);
+            }
+        }
+    };
+}
+
+/// Declares an arithmetic function which takes in two equal size bitvector and modifies
+/// a bitvector of same width in place.
+macro_rules! declare_in_place_bit_bin_fn {
+    ($name:ident) => {
+        paste::paste! {
+            fn [<$name _in_place>](&mut self, lhs: &impl BitVecOps, rhs: &impl BitVecOps) {
+                debug_assert_eq!(self.width(), lhs.width());
+                debug_assert_eq!(lhs.width(), rhs.width());
+                crate::bv::arithmetic::$name(self.words_mut(), lhs.words(), rhs.words());
+            }
+        }
+    };
+}
+
 /// Operations over mutable bit-vector values.
 pub trait BitVecMutOps: BitVecOps {
     fn words_mut(&mut self) -> &mut [Word];
+
+    declare_in_place_arith_bin_fn!(add);
+    declare_in_place_arith_bin_fn!(sub);
+    declare_in_place_arith_bin_fn!(shift_left);
+    declare_in_place_arith_bin_fn!(shift_right);
+    declare_in_place_arith_bin_fn!(arithmetic_shift_right);
+
+    fn mul_in_place(&mut self, lhs: &impl BitVecOps, rhs: &impl BitVecOps) {
+        let width = self.width();
+        match (self.words_mut(), lhs.words(), rhs.words()) {
+            ([dst], [a], [b]) => {
+                *dst = a.overflowing_mul(*b).0 & mask(width);
+            }
+            ([dst_lsb, dst_msb], [a_lsb, a_msb], [b_lsb, b_msb]) => {
+                [*dst_lsb, *dst_msb] = double_word_to_words(
+                    double_word_from_words(*a_lsb, *a_msb)
+                        .overflowing_mul(double_word_from_words(*b_lsb, *b_msb))
+                        .0
+                        & mask_double_word(width),
+                );
+            }
+            (dst_words_mut, a_words, b_words) => {
+                crate::bv::arithmetic::mul(dst_words_mut, a_words, b_words, width);
+            }
+        }
+    }
+
+    declare_in_place_bit_bin_fn!(and);
+    declare_in_place_bit_bin_fn!(or);
+    declare_in_place_bit_bin_fn!(xor);
+
+    fn concat_in_place(&mut self, lhs: &impl BitVecOps, rhs: &impl BitVecOps) {
+        let width = self.width();
+        debug_assert_eq!(width, lhs.width() + rhs.width());
+        crate::bv::arithmetic::concat(self.words_mut(), lhs.words(), rhs.words(), rhs.width());
+    }
+
+    fn slice_in_place(&mut self, src: &impl BitVecOps, msb: WidthInt, lsb: WidthInt) {
+        let width = self.width();
+        debug_assert_eq!(width, msb - lsb + 1);
+        crate::bv::arithmetic::slice(self.words_mut(), src.words(), msb, lsb);
+    }
+
+    fn not_in_place(&mut self) {
+        self.words_mut().iter_mut().for_each(|word| *word = !*word);
+    }
+
+    fn negate_in_place(&mut self) {
+        let width = self.width();
+        crate::bv::arithmetic::negate_in_place(self.words_mut(), width);
+    }
+
+    fn sign_extend_in_place(&mut self, src: &impl BitVecOps, by: WidthInt) {
+        let width = self.width();
+        debug_assert_eq!(width, src.width() + by);
+        crate::bv::arithmetic::sign_extend(self.words_mut(), src.words(), src.width(), width);
+    }
+
+    fn zero_extend_in_place(&mut self, src: &impl BitVecOps, by: WidthInt) {
+        let width = self.width();
+        debug_assert_eq!(width, src.width() + by);
+        crate::bv::arithmetic::zero_extend(self.words_mut(), src.words());
+    }
 
     fn assign<'a>(&mut self, value: impl Into<BitVecValueRef<'a>>) {
         let value = value.into();
