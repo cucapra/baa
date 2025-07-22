@@ -13,14 +13,14 @@ use proptest::prelude::*;
 
 #[cfg(feature = "bigint")]
 fn do_test_arith(
-    a: BigInt,
-    b: BigInt,
+    a: &BigInt,
+    b: &BigInt,
     width: WidthInt,
     our: fn(&BitVecValue, &BitVecValue) -> BitVecValue,
     big: fn(BigInt, BigInt) -> BigInt,
 ) {
-    let a_vec = BitVecValue::from_big_int(&a, width);
-    let b_vec = BitVecValue::from_big_int(&b, width);
+    let a_vec = BitVecValue::from_big_int(a, width);
+    let b_vec = BitVecValue::from_big_int(b, width);
     let res = our(&a_vec, &b_vec);
 
     // check result
@@ -32,18 +32,60 @@ fn do_test_arith(
 }
 
 #[cfg(feature = "bigint")]
+fn do_test_arith_in_place(
+    a: &BigInt,
+    b: &BigInt,
+    width: WidthInt,
+    our: fn(&mut BitVecValue, &BitVecValue, &BitVecValue),
+    big: fn(BigInt, BigInt) -> BigInt,
+) {
+    let a_vec = BitVecValue::from_big_int(a, width);
+    let b_vec = BitVecValue::from_big_int(b, width);
+    let mut res = BitVecValue::zero(width);
+    our(&mut res, &a_vec, &b_vec);
+
+    // check result
+    let expected_mask = (BigInt::from(1) << width) - 1;
+    let expected_num: BigInt = big(a.clone(), b.clone()) & expected_mask;
+    // after masking, only the magnitude counts
+    let expected = BitVecValue::from_big_uint(expected_num.magnitude(), width);
+    assert_eq!(expected, res, "{a} {b} {expected_num}");
+}
+
+#[cfg(feature = "bigint")]
 fn do_test_add(a: BigInt, b: BigInt, width: WidthInt) {
-    do_test_arith(a, b, width, |a, b| a.add(b), |a, b| a + b)
+    do_test_arith(&a, &b, width, |a, b| a.add(b), |a, b| a + b);
+    do_test_arith_in_place(
+        &a,
+        &b,
+        width,
+        |dst, a, b| dst.add_in_place(a, b),
+        |a, b| a + b,
+    );
 }
 
 #[cfg(feature = "bigint")]
 fn do_test_sub(a: BigInt, b: BigInt, width: WidthInt) {
-    do_test_arith(a, b, width, |a, b| a.sub(b), |a, b| a - b)
+    do_test_arith(&a, &b, width, |a, b| a.sub(b), |a, b| a - b);
+    do_test_arith_in_place(
+        &a,
+        &b,
+        width,
+        |dst, a, b| dst.sub_in_place(a, b),
+        |a, b| a - b,
+    );
 }
 
 #[cfg(feature = "bigint")]
 fn do_test_mul(a: BigInt, b: BigInt, width: WidthInt) {
-    do_test_arith(a, b, width, |a, b| a.mul(b), |a, b| a * b)
+    do_test_arith(&a, &b, width, |a, b| a.mul(b), |a, b| a * b);
+    do_test_arith_in_place(
+        &a,
+        &b,
+        width,
+        |dst, a, b| dst.mul_in_place(a, b),
+        |a, b| a * b,
+    );
 }
 
 //////////////////////////

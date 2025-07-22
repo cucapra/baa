@@ -20,6 +20,9 @@ fn do_test_concat(a: &str, b: &str) {
     let c_value = a_value.concat(&b_value);
     let expected = format!("{a}{b}");
     assert_eq!(c_value.to_bit_str(), expected);
+    let mut c_value = BitVecValue::zero(c_value.width());
+    c_value.concat_in_place(&a_value, &b_value);
+    assert_eq!(c_value.to_bit_str(), expected);
 }
 
 fn do_test_slice(src: &str, hi: WidthInt, lo: WidthInt) {
@@ -37,6 +40,9 @@ fn do_test_slice(src: &str, hi: WidthInt, lo: WidthInt) {
         .skip((src_value.width() - 1 - hi) as usize)
         .take(res.width() as usize)
         .collect();
+    assert_eq!(res.to_bit_str(), expected);
+    let mut res = BitVecValue::zero(hi - lo + 1);
+    res.slice_in_place(&src_value, hi, lo);
     assert_eq!(res.to_bit_str(), expected);
 }
 
@@ -73,6 +79,17 @@ fn do_test_shift(src: &str, by: WidthInt, right: bool, signed: bool) {
     }
     let expected = BitVecValue::from_bit_str(&expected).unwrap();
     assert_eq!(res, expected, "{src:?} {by} {res:?} {expected:?}");
+    let mut res = BitVecValue::zero(a.width());
+    if right {
+        if signed {
+            res.arithmetic_shift_right_in_place(&a, &b);
+        } else {
+            res.shift_right_in_place(&a, &b);
+        }
+    } else {
+        res.shift_left_in_place(&a, &b)
+    };
+    assert_eq!(res, expected, "{src:?} {by} {res:?} {expected:?}");
 }
 
 fn do_test_shift_right(src: &str, by: WidthInt) {
@@ -100,6 +117,9 @@ fn do_test_zero_ext(src: &str, by: WidthInt) {
         actual.to_bit_str(),
         expected.to_bit_str()
     );
+    let mut actual = BitVecValue::zero(value.width() + by);
+    actual.zero_extend_in_place(&value, by);
+    assert_eq!(actual, expected);
 }
 
 fn do_test_sign_ext(src: &str, by: WidthInt) {
@@ -118,6 +138,9 @@ fn do_test_sign_ext(src: &str, by: WidthInt) {
         actual.to_bit_str(),
         expected.to_bit_str()
     );
+    let mut actual = BitVecValue::zero(value.width() + by);
+    actual.sign_extend_in_place(&value, by);
+    assert_eq!(actual, expected);
 }
 
 //////////////////////////
