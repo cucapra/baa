@@ -1,7 +1,7 @@
 [package]
 name = "baa"
-version = "0.16.9"
-edition = "2021"
+version = "0.17.0"
+edition = "2024"
 authors = ["Kevin Laeufer <laeufer@cornell.edu>"]
 description = "BitVector and Array Arithmetic"
 repository = "https://github.com/ekiwi/baa"
@@ -9,20 +9,19 @@ license = "BSD-3-Clause"
 include = ["Cargo.toml", "LICENSE", "src/", "Readme.md", "tests/"]
 keywords = ["bitvector", "array", "arithmetic"]
 readme = "Readme.md"
-# we require the `div_ceil` method on integers
-rust-version = "1.73.0"
+rust-version = "1.85.0"
 
 [dependencies]
 # optional dependencies for crate interop
 fraction = { version = "0.15", optional = true }
 num-bigint = { version = "0.4", optional = true }
 paste = "1.0.15"
-rand = { version = "0.8.5", optional = true, features = ["small_rng"] }
+rand = { version = "0.9", optional = true, features = ["small_rng"] }
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 
 [dev-dependencies]
-proptest = "1.4.0"
+proptest = "1.7"
 num-bigint = "0.4"
 
 [features]

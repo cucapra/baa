@@ -199,7 +199,7 @@ fn hex_digit_value(digit: u8) -> Result<u8, ParseIntError> {
         _ => {
             return Err(ParseIntError {
                 kind: IntErrorKind::InvalidDigit,
-            })
+            });
         }
     };
     Ok(value)
@@ -284,7 +284,9 @@ pub(crate) fn from_str_radix(
                 2 => parse_base_2(digits, out, width)?,
                 10 => parse_base_10(digits, out)?,
                 16 => parse_base_16(digits, out)?,
-                _ => todo!("Implement support for base {radix}. Currently the following bases are available: 2, 10, 16"),
+                _ => todo!(
+                    "Implement support for base {radix}. Currently the following bases are available: 2, 10, 16"
+                ),
             };
         }
     }
@@ -433,7 +435,7 @@ fn parse_base_2(
             _ => {
                 return Err(ParseIntError {
                     kind: IntErrorKind::InvalidDigit,
-                })
+                });
             }
         };
         word = (word << 1) | value;

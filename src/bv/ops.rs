@@ -8,7 +8,7 @@
 use crate::bv::arithmetic::mask_double_word;
 use crate::bv::io::strings::ParseIntError;
 use crate::bv::owned::{double_word_from_words, double_word_to_words};
-use crate::{mask, BitVecValue, BitVecValueRef, DoubleWord, WidthInt, Word};
+use crate::{BitVecValue, BitVecValueRef, DoubleWord, WidthInt, Word, mask};
 #[cfg(feature = "rand1")]
 use rand::Rng;
 

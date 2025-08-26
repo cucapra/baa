@@ -8,9 +8,9 @@ use crate::{
     BitVecMutOps, BitVecOps, BitVecValue, BitVecValueMutRef, BitVecValueRef, WidthInt, Word,
 };
 #[cfg(feature = "rand1")]
-use rand::distributions::Uniform;
-#[cfg(feature = "rand1")]
 use rand::Rng;
+#[cfg(feature = "rand1")]
+use rand::distributions::Uniform;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
@@ -732,7 +732,9 @@ impl SparseArrayValue {
                     map.insert(index, data);
                 }
             }
-            _ => panic!("store_u64_u64 can only be used when index and data bit width is at or under 64 bit.")
+            _ => panic!(
+                "store_u64_u64 can only be used when index and data bit width is at or under 64 bit."
+            ),
         }
     }
 
@@ -765,7 +767,7 @@ impl SparseArrayValue {
     /// Returns an iterator to all index/data pairs that do not evaluate to the default value.
     /// Note that the order of entries is non-deterministic. Convert to a Vec and sort of you
     /// want to ensure a predictable outcome.
-    pub fn non_default_entries(&self) -> SparseArrayEntryIter {
+    pub fn non_default_entries(&self) -> SparseArrayEntryIter<'_> {
         let underlying = match &self.data {
             SparseArrayImpl::U64U64(_, m) => SparseArrayIterImpl::U64U64(m.iter()),
             SparseArrayImpl::U64Big(_, m) => SparseArrayIterImpl::U64Big(m.iter()),

@@ -5,7 +5,7 @@
 use crate::bv::arithmetic::mask_double_word;
 use crate::bv::borrowed::BitVecValueRefImpl;
 use crate::bv::io::strings::ParseIntError;
-use crate::{mask, BitVecMutOps, BitVecOps, BitVecValueRef, DoubleWord, WidthInt, Word};
+use crate::{BitVecMutOps, BitVecOps, BitVecValueRef, DoubleWord, WidthInt, Word, mask};
 
 /// Owned bit-vector value.
 /// Note: Ord does not necessarily order by value.
