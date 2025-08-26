@@ -338,7 +338,7 @@ pub(crate) fn shift_left(dst: &mut [Word], a: &[Word], b: &[Word], width: WidthI
     let shift_left = shift_amount % Word::BITS;
     let shift_words = shift_amount / Word::BITS;
     let shift_right = Word::BITS - shift_left;
-    let zeros = std::iter::repeat(&(0 as Word)).take(shift_words as usize);
+    let zeros = std::iter::repeat_n(&(0 as Word), shift_words as usize);
     let mut prev = 0;
     for (d, s) in dst.iter_mut().zip(zeros.chain(a.iter())) {
         if shift_left == 0 {

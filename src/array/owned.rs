@@ -839,12 +839,11 @@ impl ArrayOps for SparseArrayValue {
             }
             SparseArrayImpl::U64Big(default, map) => {
                 let index = index.to_u64().unwrap();
-                let value = map.get(&index).cloned().unwrap_or_else(|| default.clone());
-                value
+
+                map.get(&index).cloned().unwrap_or_else(|| default.clone())
             }
             SparseArrayImpl::BigBig(default, map) => {
-                let value = map.get(&index).cloned().unwrap_or_else(|| default.clone());
-                value
+                map.get(&index).cloned().unwrap_or_else(|| default.clone())
             }
         }
     }
