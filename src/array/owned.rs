@@ -10,7 +10,7 @@ use crate::{
 #[cfg(feature = "rand1")]
 use rand::Rng;
 #[cfg(feature = "rand1")]
-use rand::distributions::Uniform;
+use rand::distr::Uniform;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
@@ -349,10 +349,10 @@ impl DenseArrayValue {
         let data = if data_width == 1 {
             DenseArrayImpl::Bit(BitVecValue::random(rng, elements as WidthInt))
         } else if data_width <= u8::BITS {
-            let range = Uniform::from(0..(u8::MAX >> (u8::BITS - data_width)));
+            let range = Uniform::try_from(0..(u8::MAX >> (u8::BITS - data_width))).unwrap();
             DenseArrayImpl::U8(rng.sample_iter(&range).take(elements).collect())
         } else if data_width <= u64::BITS {
-            let range = Uniform::from(0..(u64::MAX >> (u64::BITS - data_width)));
+            let range = Uniform::try_from(0..(u64::MAX >> (u64::BITS - data_width))).unwrap();
             DenseArrayImpl::U64(rng.sample_iter(&range).take(elements).collect())
         } else {
             let words_per_element = data_width.div_ceil(Word::BITS) as usize;
