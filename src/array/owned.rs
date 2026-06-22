@@ -8,7 +8,7 @@ use crate::{
     BitVecMutOps, BitVecOps, BitVecValue, BitVecValueMutRef, BitVecValueRef, WidthInt, Word,
 };
 #[cfg(feature = "rand1")]
-use rand::Rng;
+use rand::RngExt;
 #[cfg(feature = "rand1")]
 use rand::distr::Uniform;
 use std::collections::HashMap;

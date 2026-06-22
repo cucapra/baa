@@ -10,7 +10,7 @@ use crate::bv::io::strings::ParseIntError;
 use crate::bv::owned::{double_word_from_words, double_word_to_words};
 use crate::{BitVecValue, BitVecValueRef, DoubleWord, WidthInt, Word, mask};
 #[cfg(feature = "rand1")]
-use rand::Rng;
+use rand::RngExt;
 
 /// Declares an arithmetic function which takes in two equal size bitvector and yields a
 /// bitvector of the same size.
@@ -692,7 +692,7 @@ pub trait BitVecMutOps: BitVecOps {
     }
 
     #[cfg(feature = "rand1")]
-    fn randomize(&mut self, rng: &mut impl Rng) {
+    fn randomize(&mut self, rng: &mut impl RngExt) {
         rng.fill(self.words_mut());
         self.mask_msb();
     }
