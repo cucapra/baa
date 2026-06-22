@@ -14,6 +14,7 @@ pub struct BitVecValueRef<'a>(pub(super) BitVecValueRefImpl<'a>);
 
 #[derive(Clone, Copy, Hash)]
 pub(super) enum BitVecValueRefImpl<'a> {
+    Empty,
     Word(WidthInt, Word),
     Double(WidthInt, [Word; 2]),
     Big(WidthInt, &'a [Word]),
@@ -23,7 +24,7 @@ impl<'a> BitVecValueRef<'a> {
     pub fn new(words: &'a [Word], width: WidthInt) -> Self {
         debug_assert_eq!(width.div_ceil(Word::BITS) as usize, words.len());
         match words {
-            [] => panic!("0-bit not allowed!"),
+            [] => Self(BitVecValueRefImpl::Empty),
             [one] => Self(BitVecValueRefImpl::Word(width, *one)),
             [lsb, msb] => Self(BitVecValueRefImpl::Double(width, [*lsb, *msb])),
             more => Self(BitVecValueRefImpl::Big(width, more)),
@@ -34,6 +35,7 @@ impl<'a> BitVecValueRef<'a> {
 impl<'a> From<&'a BitVecValue> for BitVecValueRef<'a> {
     fn from(value: &'a BitVecValue) -> Self {
         Self(match &value.0 {
+            BitVecValueImpl::Empty => BitVecValueRefImpl::Empty,
             BitVecValueImpl::Word(width, value) => BitVecValueRefImpl::Word(*width, *value),
             BitVecValueImpl::Double(width, value) => BitVecValueRefImpl::Double(*width, *value),
             BitVecValueImpl::Big(width, value) => BitVecValueRefImpl::Big(*width, value),
@@ -84,6 +86,7 @@ impl std::fmt::Debug for BitVecValueMutRef<'_> {
 impl BitVecOps for BitVecValueRef<'_> {
     fn width(&self) -> WidthInt {
         match &self.0 {
+            BitVecValueRefImpl::Empty => 0,
             BitVecValueRefImpl::Word(w, _) => *w,
             BitVecValueRefImpl::Double(w, _) => *w,
             BitVecValueRefImpl::Big(w, _) => *w,
@@ -92,6 +95,7 @@ impl BitVecOps for BitVecValueRef<'_> {
 
     fn words(&self) -> &[Word] {
         match &self.0 {
+            BitVecValueRefImpl::Empty => &[],
             BitVecValueRefImpl::Word(_, value) => std::slice::from_ref(value),
             BitVecValueRefImpl::Double(_, value) => value.as_slice(),
             BitVecValueRefImpl::Big(_, value) => value,

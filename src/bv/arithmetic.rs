@@ -13,7 +13,7 @@ type DoubleWord = u128;
 
 #[inline]
 pub fn mask(bits: WidthInt) -> Word {
-    if bits == Word::BITS || bits == 0 {
+    if bits == Word::BITS {
         Word::MAX
     } else {
         assert!(bits < Word::BITS);
@@ -394,10 +394,14 @@ pub(crate) fn cmp_greater(a: &[Word], b: &[Word]) -> bool {
 
 #[inline]
 pub(crate) fn is_neg(src: &[Word], width: WidthInt) -> bool {
-    let msb_bit_id = (width - 1) % Word::BITS;
-    let msb_word = src.last().unwrap();
-    let msb_bit_value = ((msb_word) >> msb_bit_id) & 1;
-    msb_bit_value == 1
+    if width == 0 {
+        false
+    } else {
+        let msb_bit_id = (width - 1) % Word::BITS;
+        let msb_word = src.last().unwrap();
+        let msb_bit_value = ((msb_word) >> msb_bit_id) & 1;
+        msb_bit_value == 1
+    }
 }
 
 #[inline]
