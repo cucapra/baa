@@ -245,7 +245,15 @@ pub(crate) fn from_str_radix(
         [out] => {
             debug_assert!(width <= 64);
             *out = match u64::from_str_radix(value, radix) {
-                Ok(v) => v,
+                Ok(v) => {
+                    let mask = super::super::arithmetic::mask(width);
+                    if v != v & mask {
+                        return Err(ParseIntError {
+                            kind: IntErrorKind::ExceedsWidth,
+                        });
+                    }
+                    v
+                }
                 Err(e) => {
                     let kind = match e.kind() {
                         std::num::IntErrorKind::NegOverflow
@@ -259,6 +267,13 @@ pub(crate) fn from_str_radix(
         [lsb, msb] => {
             debug_assert!(width <= 128);
             let out = parse_u128(value, radix)?;
+            let mask = super::super::arithmetic::mask_double_word(width);
+            if out != out & mask {
+                return Err(ParseIntError {
+                    kind: IntErrorKind::ExceedsWidth,
+                });
+            }
+
             *lsb = out as Word;
             *msb = (out >> Word::BITS) as Word;
         }
@@ -280,7 +295,7 @@ pub(crate) fn from_str_radix(
                 _ => digits,
             };
 
-            match radix {
+            let parsed_width = match radix {
                 2 => parse_base_2(digits, out, width)?,
                 10 => parse_base_10(digits, out)?,
                 16 => parse_base_16(digits, out)?,
@@ -288,18 +303,13 @@ pub(crate) fn from_str_radix(
                     "Implement support for base {radix}. Currently the following bases are available: 2, 10, 16"
                 ),
             };
+            if parsed_width > width {
+                return Err(ParseIntError {
+                    kind: IntErrorKind::ExceedsWidth,
+                });
+            }
         }
     }
-
-    // TODO: check width
-    // let m = super::super::arithmetic::mask(width);
-    // if *out != *out & m {
-    //     Err(ParseIntError {
-    //         kind: IntErrorKind::ExceedsWidth,
-    //     })
-    // } else {
-    //     Ok(())
-    // }
 
     if is_negative {
         negate_in_place(out, width)
