@@ -426,7 +426,8 @@ pub(crate) fn is_pow2(words: &[Word]) -> Option<WidthInt> {
 #[inline]
 pub(crate) fn min_width(words: &[Word]) -> WidthInt {
     // find most significant bit set
-    for (word_ii, &word) in words.iter().enumerate() {
+    for (word_ii, &word) in words.iter().enumerate().rev() {
+        // reversal to consider from most significant word down
         if word != 0 {
             // cannot underflow since word.leading_zeros() is always less than Word::BITS
             let bit_pos = Word::BITS - word.leading_zeros() - 1;

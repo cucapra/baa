@@ -100,6 +100,77 @@ fn test_to_from_dec_str_large_value() {
     assert_eq!(value.to_hex_str(), eq_hex_str);
 }
 
+#[test]
+fn test_from_dec_str_exceeds_width() {
+    let dec_str = "16";
+    let value = BitVecValue::from_str_radix(dec_str, 10, 4);
+    assert!(value.is_err());
+    let dec_str = "18446744073709551616"; // larger than intmax64 by 1
+    let value = BitVecValue::from_str_radix(dec_str, 10, 64);
+    assert!(value.is_err());
+
+    let dec_str = "596886253802847701482483271715688189726967057213902170277048855852747875443594200622744233395250662615839263196891363475349438107920290669854978619157637";
+    let value = BitVecValue::from_str_radix(dec_str, 10, 507); // the big number in dec_str_large_value, minus 4 bits for leading zero, minus 1 bit so the most-significant 0xb can't be represented
+    assert!(value.is_err());
+}
+
+#[test]
+fn test_from_dec_str_exceeds_width_sub() {
+    // negative case
+    let dec_str_minus = "-16";
+    let value = BitVecValue::from_str_radix(dec_str_minus, 10, 4);
+    assert!(value.is_err());
+    let dec_str_minus = "-18446744073709551616";
+    let value = BitVecValue::from_str_radix(dec_str_minus, 10, 64);
+    assert!(value.is_err());
+    let dec_str_minus = "-596886253802847701482483271715688189726967057213902170277048855852747875443594200622744233395250662615839263196891363475349438107920290669854978619157637";
+    let value = BitVecValue::from_str_radix(dec_str_minus, 10, 507);
+    assert!(value.is_err());
+}
+
+#[test]
+fn test_from_hex_str_exceeds_width() {
+    // positive case
+    let hex_str = "100";
+    let value = BitVecValue::from_str_radix(hex_str, 16, 8);
+    assert!(value.is_err());
+    let hex_str = "40000000000000000";
+    let value = BitVecValue::from_str_radix(hex_str, 16, 65);
+    assert!(value.is_err());
+    let hex_str = "400000000000000000000000000000000";
+    let value = BitVecValue::from_str_radix(hex_str, 16, 129);
+    assert!(value.is_err());
+}
+
+#[test]
+fn test_from_hex_str_exceeds_width_sub() {
+    // negative case
+    let hex_str_minus = "-100"; // -257
+    let value = BitVecValue::from_str_radix(hex_str_minus, 16, 8);
+    assert!(value.is_err());
+    let hex_str_minus = "-40000000000000000";
+    let value = BitVecValue::from_str_radix(hex_str_minus, 16, 65);
+    assert!(value.is_err());
+    let hex_str_minus = "-400000000000000000000000000000000";
+    let value = BitVecValue::from_str_radix(hex_str_minus, 16, 129);
+    assert!(value.is_err())
+}
+
+#[test]
+fn test_from_bin_str_exceeds_width() {
+    // positive case
+    let bin_str = "1010";
+    let value = BitVecValue::from_str_radix(bin_str, 2, 3);
+    assert!(value.is_err());
+}
+
+#[test]
+fn test_from_bin_str_exceeds_width_sub() {
+    let bin_str_minus = "-1000"; // semantics around negative bits are weird.
+    let value = BitVecValue::from_str_radix(bin_str_minus, 2, 3);
+    assert!(value.is_err())
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(10000))]
 
