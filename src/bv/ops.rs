@@ -687,6 +687,16 @@ pub trait BitVecMutOps: BitVecOps {
         crate::bv::io::strings::from_str_radix(value, radix, self.words_mut(), width)
     }
 
+    fn assign_from_bytes_le(&mut self, bytes: &[u8]) {
+        let width = self.width();
+        crate::bv::io::bytes::from_bytes_le(bytes.iter().cloned(), width, self.words_mut())
+    }
+
+    fn assign_from_bytes_be(&mut self, bytes: &[u8]) {
+        let width = self.width();
+        crate::bv::io::bytes::from_bytes_be(bytes.iter().cloned(), width, self.words_mut())
+    }
+
     fn set_bit(&mut self, pos: WidthInt) {
         crate::bv::arithmetic::set_bit(self.words_mut(), pos);
     }
