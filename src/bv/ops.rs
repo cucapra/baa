@@ -98,6 +98,10 @@ pub trait BitVecOps {
         crate::bv::io::bytes::to_bytes_le(self.words(), self.width())
     }
 
+    fn to_bytes_be(&self) -> Vec<u8> {
+        crate::bv::io::bytes::to_bytes_be(self.words(), self.width())
+    }
+
     #[cfg(feature = "bigint")]
     fn to_big_int(&self) -> num_bigint::BigInt {
         crate::bv::io::bigint::to_big_int(self.words(), self.width())

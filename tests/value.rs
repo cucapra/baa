@@ -20,6 +20,49 @@ fn i32_to_ibig_regression() {
     assert_eq!(val.to_big_int(), input.into())
 }
 
+fn without_trailing_zeros(v: &[u8]) -> &[u8] {
+    let num_trailing_zeros = v.iter().rev().take_while(|v| **v == 0).count();
+    &v[0..v.len() - num_trailing_zeros]
+}
+
+fn without_leading_zeros(v: &[u8]) -> &[u8] {
+    let num_leading_zeros = v.iter().take_while(|v| **v == 0).count();
+    &v[num_leading_zeros..]
+}
+
+fn do_bytes_le_roundtrip(b: Vec<u8>) {
+    let width = if b.is_empty() {
+        // a width of 0 is currently unsupported, so we treat &[] as a 1-bit zero.
+        1
+    } else {
+        // try to avoid making width always a multiple of 8
+        (b.len() - 1) * u8::BITS as usize
+            + std::cmp::max(8 - b.last().unwrap().leading_zeros() as usize, 1)
+    } as u32;
+    let bitvec = BitVecValue::from_bytes_le(&b, width);
+    let out = bitvec.to_bytes_le();
+    assert_eq!(without_trailing_zeros(&out), without_trailing_zeros(&b));
+}
+
+fn do_bytes_be_roundtrip(b: Vec<u8>) {
+    let width = if b.is_empty() {
+        // a width of 0 is currently unsupported, so we treat &[] as a 1-bit zero.
+        1
+    } else {
+        // try to avoid making width always a multiple of 8
+        (b.len() - 1) * u8::BITS as usize
+            + std::cmp::max(8 - b.first().unwrap().leading_zeros() as usize, 1)
+    } as u32;
+    let bitvec = BitVecValue::from_bytes_be(&b, width);
+    let out = bitvec.to_bytes_be();
+    assert_eq!(without_leading_zeros(&out), without_leading_zeros(&b));
+}
+
+#[test]
+fn bytes_be_roundtrip_regression() {
+    do_bytes_be_roundtrip(vec![1]);
+}
+
 proptest! {
 
     #[test]
@@ -39,6 +82,16 @@ proptest! {
     fn i32_to_ibig(input: i32) {
         let val = BitVecValue::from_i64(input as i64, 32);
         prop_assert_eq!(val.to_big_int(), input.into())
+    }
+
+    #[test]
+    fn bytes_le_roundtrip(b: Vec<u8>) {
+        do_bytes_le_roundtrip(b)
+    }
+
+    #[test]
+    fn bytes_be_roundtrip(b: Vec<u8>) {
+        do_bytes_be_roundtrip(b)
     }
 }
 

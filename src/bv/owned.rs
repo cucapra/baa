@@ -5,7 +5,10 @@
 use crate::bv::arithmetic::mask_double_word;
 use crate::bv::borrowed::BitVecValueRefImpl;
 use crate::bv::io::strings::ParseIntError;
-use crate::{BitVecMutOps, BitVecOps, BitVecValueRef, DoubleWord, WidthInt, Word, mask};
+use crate::{
+    BYTES_IN_DOUBLE_WORD, BYTES_IN_WORD, BitVecMutOps, BitVecOps, BitVecValueRef, DoubleWord,
+    WidthInt, Word, mask,
+};
 
 /// Owned bit-vector value.
 /// Note: Ord does not necessarily order by value.
@@ -165,12 +168,12 @@ impl BitVecValue {
         debug_assert!(width.div_ceil(u8::BITS) as usize >= bytes.len());
         match width.into() {
             W::Word => {
-                let mut b = [0u8; Word::BITS.div_ceil(u8::BITS) as usize];
+                let mut b = [0u8; BYTES_IN_WORD as usize];
                 b[0..bytes.len()].copy_from_slice(bytes);
                 Self(BitVecValueImpl::new_word(Word::from_le_bytes(b), width))
             }
             W::Double => {
-                let mut b = [0u8; DoubleWord::BITS.div_ceil(u8::BITS) as usize];
+                let mut b = [0u8; BYTES_IN_DOUBLE_WORD as usize];
                 b[0..bytes.len()].copy_from_slice(bytes);
                 Self(BitVecValueImpl::new_double_word(
                     DoubleWord::from_le_bytes(b),
@@ -179,7 +182,33 @@ impl BitVecValue {
             }
             W::Big => {
                 let mut out = BitVecValue::zero(width);
-                crate::bv::io::bytes::from_bytes_le(bytes, width, out.words_mut());
+                crate::bv::io::bytes::from_bytes_le(bytes.iter().cloned(), width, out.words_mut());
+                out
+            }
+        }
+    }
+
+    pub fn from_bytes_be(bytes: &[u8], width: WidthInt) -> Self {
+        debug_assert!(width.div_ceil(u8::BITS) as usize >= bytes.len());
+        match width.into() {
+            W::Word => {
+                let mut b = [0u8; BYTES_IN_WORD as usize];
+                // for big-endian, we need to right-align
+                b[BYTES_IN_WORD as usize - bytes.len()..].copy_from_slice(bytes);
+                Self(BitVecValueImpl::new_word(Word::from_be_bytes(b), width))
+            }
+            W::Double => {
+                let mut b = [0u8; BYTES_IN_DOUBLE_WORD as usize];
+                // for big-endian, we need to right-align
+                b[BYTES_IN_DOUBLE_WORD as usize - bytes.len()..].copy_from_slice(bytes);
+                Self(BitVecValueImpl::new_double_word(
+                    DoubleWord::from_be_bytes(b),
+                    width,
+                ))
+            }
+            W::Big => {
+                let mut out = BitVecValue::zero(width);
+                crate::bv::io::bytes::from_bytes_be(bytes.iter().cloned(), width, out.words_mut());
                 out
             }
         }

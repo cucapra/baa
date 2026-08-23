@@ -6,8 +6,10 @@ pub type WidthInt = u32;
 
 /// Word size for values.
 pub type Word = u64;
+pub const BYTES_IN_WORD: u32 = Word::BITS.div_ceil(u8::BITS);
 
 pub type DoubleWord = u128;
+pub const BYTES_IN_DOUBLE_WORD: u32 = DoubleWord::BITS.div_ceil(u8::BITS);
 
 const _: () = assert!(Word::BITS * 2 == DoubleWord::BITS);
 

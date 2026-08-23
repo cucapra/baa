@@ -23,19 +23,39 @@ pub(crate) fn to_bytes_le(values: &[Word], width: WidthInt) -> Vec<u8> {
     out
 }
 
-pub(crate) fn from_bytes_le(bytes: &[u8], width: WidthInt, out: &mut [Word]) {
+pub(crate) fn to_bytes_be(values: &[Word], width: WidthInt) -> Vec<u8> {
+    let mut out = to_bytes_le(values, width);
+    out.reverse();
+    out
+}
+
+pub(crate) fn from_bytes_le(
+    bytes: impl ExactSizeIterator + Iterator<Item = u8>,
+    width: WidthInt,
+    out: &mut [Word],
+) {
     let word_count = width.div_ceil(Word::BITS) as usize;
     debug_assert!(out.len() >= word_count);
     if width == 0 {
         return;
     }
+    let max_word_ii = (bytes.len() - 1) / BYTES_PER_WORD as usize;
+    debug_assert!(max_word_ii < out.len());
     crate::bv::arithmetic::clear(out);
-    for (ii, bb) in bytes.iter().enumerate() {
+    for (ii, bb) in bytes.enumerate() {
         let word_ii = ii / BYTES_PER_WORD as usize;
         let shift_by = u8::BITS * (ii as u32 % BYTES_PER_WORD);
-        out[word_ii] |= (*bb as Word) << shift_by;
+        out[word_ii] |= (bb as Word) << shift_by;
     }
     crate::bv::arithmetic::mask_msb(out, width);
+}
+
+pub(crate) fn from_bytes_be(
+    bytes: impl DoubleEndedIterator + ExactSizeIterator + Iterator<Item = u8>,
+    width: WidthInt,
+    out: &mut [Word],
+) {
+    from_bytes_le(bytes.rev(), width, out);
 }
 
 #[cfg(test)]
@@ -54,8 +74,17 @@ mod tests {
     #[test]
     fn test_from_bytes_le() {
         let mut out0 = vec![0; 1];
-        from_bytes_le(&[0x34, 0x12], 16, &mut out0);
+        from_bytes_le([0x34, 0x12].iter().cloned(), 16, &mut out0);
         assert_eq!(out0, [0x1234]);
+    }
+
+    #[test]
+    fn test_from_bytes_be() {
+        let mut out0 = vec![0; 1];
+        from_bytes_be([1].iter().cloned(), 1, &mut out0);
+        assert_eq!(out0, [1]);
+        let out1 = to_bytes_be(&out0, 1);
+        assert_eq!(out1, [1]);
     }
 
     fn do_test_from_to_bytes_le(b: &[u8]) {
@@ -67,26 +96,48 @@ mod tests {
         } as u32;
         let words = width.div_ceil(Word::BITS) as usize;
         let mut out = vec![0; words];
-        from_bytes_le(b, width, &mut out);
+        from_bytes_le(b.iter().cloned(), width, &mut out);
         crate::bv::arithmetic::assert_unused_bits_zero(&out, width);
         let b_out = to_bytes_le(&out, width);
         assert_eq!(b, b_out);
     }
 
-    #[test]
-    fn test_empty() {
-        do_test_from_to_bytes_le(&[]);
+    fn do_test_from_to_bytes_be(b: &[u8]) {
+        let width = if b.is_empty() {
+            0
+        } else {
+            (b.len() - 1) * u8::BITS as usize
+                + std::cmp::max(8 - b.first().unwrap().leading_zeros() as usize, 1)
+        } as u32;
+        let words = width.div_ceil(Word::BITS) as usize;
+        let mut out = vec![0; words];
+        from_bytes_be(b.iter().cloned(), width, &mut out);
+        crate::bv::arithmetic::assert_unused_bits_zero(&out, width);
+        let b_out = to_bytes_be(&out, width);
+        assert_eq!(b, b_out);
     }
 
     #[test]
-    fn test_zero() {
+    fn test_le_empty() {
+        do_test_from_to_bytes_le(&[]);
+        do_test_from_to_bytes_be(&[]);
+    }
+
+    #[test]
+    fn test_le_zero() {
         do_test_from_to_bytes_le(&[0]);
+        do_test_from_to_bytes_be(&[0]);
     }
 
     proptest! {
         #[test]
         fn test_from_to_bytes_le(b: Vec<u8>) {
             do_test_from_to_bytes_le(&b);
+        }
+
+        #[test]
+        fn test_from_to_bytes_be(b: Vec<u8>) {
+            do_test_from_to_bytes_be(&b);
         }
     }
 }
