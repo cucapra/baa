@@ -22,6 +22,7 @@ pub struct BitVecValue(pub(super) BitVecValueImpl);
 #[derive(Clone, Hash, PartialOrd, Ord, Eq, PartialEq)]
 #[cfg_attr(feature = "serde1", derive(serde::Serialize, serde::Deserialize))]
 pub(super) enum BitVecValueImpl {
+    Empty,
     Word(WidthInt, Word),
     Double(WidthInt, [Word; 2]),
     Big(WidthInt, Box<[Word]>),
@@ -30,7 +31,7 @@ pub(super) enum BitVecValueImpl {
 impl BitVecValueImpl {
     /// Create a new value that fits into a single word
     const fn new_word(value: Word, width: WidthInt) -> Self {
-        debug_assert!(width > 0 && width <= Word::BITS);
+        debug_assert!(width <= Word::BITS);
         Self::Word(width, value)
     }
 
@@ -62,6 +63,7 @@ pub(super) const fn double_word_from_words(lsb: Word, msb: Word) -> DoubleWord {
 /// divides width into three different classes
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) enum W {
+    Empty,
     Word,
     Double,
     Big,
@@ -72,7 +74,7 @@ impl From<WidthInt> for W {
     #[inline]
     fn from(value: WidthInt) -> Self {
         match value {
-            0 => panic!("zero bit is not supported!"),
+            0 => Self::Empty,
             1..=Word::BITS => Self::Word,
             MIN_DOUBLE_BITS..=DoubleWord::BITS => Self::Double,
             _ => Self::Big,
@@ -104,6 +106,10 @@ impl BitVecValue {
 
     pub fn from_u64(value: u64, width: WidthInt) -> Self {
         match width.into() {
+            W::Empty => {
+                debug_assert_eq!(value, 0, "{value} does not fit into 0 bits");
+                Self(BitVecValueImpl::Empty)
+            }
             W::Word => {
                 debug_assert_eq!(
                     value & mask(width),
@@ -124,6 +130,10 @@ impl BitVecValue {
 
     pub fn from_u128(value: u128, width: WidthInt) -> Self {
         match width.into() {
+            W::Empty => {
+                debug_assert_eq!(value as Word, 0, "{value} does not fit into 0 bits");
+                Self(BitVecValueImpl::Empty)
+            }
             W::Word => {
                 debug_assert_eq!(
                     value as Word & mask(width),
@@ -167,6 +177,7 @@ impl BitVecValue {
     pub fn from_bytes_le(bytes: &[u8], width: WidthInt) -> Self {
         debug_assert!(width.div_ceil(u8::BITS) as usize >= bytes.len());
         match width.into() {
+            W::Empty => Self(BitVecValueImpl::Empty),
             W::Word => {
                 let mut b = [0u8; BYTES_IN_WORD as usize];
                 b[0..bytes.len()].copy_from_slice(bytes);
@@ -216,6 +227,7 @@ impl BitVecValue {
 
     pub fn zero(width: WidthInt) -> Self {
         Self(match width.into() {
+            W::Empty => BitVecValueImpl::Empty,
             W::Word => BitVecValueImpl::new_word(0, width),
             W::Double => BitVecValueImpl::new_double_word(0, width),
             W::Big => BitVecValueImpl::new_big_zero(width),
@@ -281,6 +293,7 @@ impl<'a> From<BitVecValueRef<'a>> for BitVecValue {
     #[inline]
     fn from(value: BitVecValueRef<'a>) -> Self {
         Self(match value.0 {
+            BitVecValueRefImpl::Empty => BitVecValueImpl::Empty,
             BitVecValueRefImpl::Word(width, value) => BitVecValueImpl::Word(width, value),
             BitVecValueRefImpl::Double(width, value) => BitVecValueImpl::Double(width, value),
             BitVecValueRefImpl::Big(width, value) => BitVecValueImpl::Big(width, Box::from(value)),
@@ -329,6 +342,7 @@ impl From<&num_bigint::BigUint> for BitVecValue {
 impl BitVecOps for BitVecValue {
     fn width(&self) -> WidthInt {
         match &self.0 {
+            BitVecValueImpl::Empty => 0,
             BitVecValueImpl::Word(w, _) => *w,
             BitVecValueImpl::Double(w, _) => *w,
             BitVecValueImpl::Big(w, _) => *w,
@@ -337,6 +351,7 @@ impl BitVecOps for BitVecValue {
 
     fn words(&self) -> &[Word] {
         match &self.0 {
+            BitVecValueImpl::Empty => &[],
             BitVecValueImpl::Word(_, value) => std::slice::from_ref(value),
             BitVecValueImpl::Double(_, value) => value.as_slice(),
             BitVecValueImpl::Big(_, value) => value.as_ref(),
@@ -347,6 +362,7 @@ impl BitVecOps for BitVecValue {
 impl BitVecMutOps for BitVecValue {
     fn words_mut(&mut self) -> &mut [Word] {
         match &mut self.0 {
+            BitVecValueImpl::Empty => &mut [],
             BitVecValueImpl::Word(_, value) => std::slice::from_mut(value),
             BitVecValueImpl::Double(_, value) => value.as_mut_slice(),
             BitVecValueImpl::Big(_, value) => value.as_mut(),

@@ -414,7 +414,7 @@ pub trait BitVecOps {
         let mut out = BitVecValue::zero(out_width);
         if out_width <= Word::BITS {
             // specialized for 1-word case
-            crate::bv::arithmetic::zero_extend(&mut out.words_mut()[0..1], &self.words()[0..1]);
+            crate::bv::arithmetic::zero_extend(&mut out.words_mut()[0..], &self.words()[0..]);
         } else {
             crate::bv::arithmetic::zero_extend(out.words_mut(), self.words());
         }
@@ -423,7 +423,7 @@ pub trait BitVecOps {
 
     fn not(&self) -> BitVecValue {
         let mut out = BitVecValue::zero(self.width());
-        if self.words().len() <= 1 {
+        if self.words().len() == 1 {
             // specialized for 1-word case
             crate::bv::arithmetic::not(
                 &mut out.words_mut()[0..1],
@@ -438,7 +438,7 @@ pub trait BitVecOps {
 
     fn negate(&self) -> BitVecValue {
         let mut out = BitVecValue::zero(self.width());
-        if self.words().len() <= 1 {
+        if self.words().len() == 1 {
             // specialized for 1-word case
             crate::bv::arithmetic::negate(
                 &mut out.words_mut()[0..1],
@@ -457,9 +457,9 @@ pub trait BitVecOps {
         if out_width <= Word::BITS {
             // specialized for 1-word case
             crate::bv::arithmetic::concat(
-                &mut out.words_mut()[0..1],
-                &self.words()[0..1],
-                &rhs.words()[0..1],
+                &mut out.words_mut()[0..],
+                &self.words()[0..],
+                &rhs.words()[0..],
                 rhs.width(),
             );
         } else {
